@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "status": "initial_design",
+  "data": {
+    "source": "export.csv",
+    "depth_unit": "m",
+    "source_depth_unit": "inches",
+    "inch_to_m": 0.0254,
+    "time_zone": "UTC",
+    "bin_seconds": 60,
+    "bin_closed": "right",
+    "bin_representative": "last_valid_observation",
+    "offline_grid_origin": "event_start",
+    "online_grid_origin": "fixed_session_origin"
+  },
+  "window": {
+    "input_bins": 30,
+    "output_bins": 15,
+    "stride_bins": 1,
+    "horizon_minutes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "input_features": [
+      "depth_m"
+    ]
+  },
+  "quality": {
+    "split_raw_gap_gt_seconds": 180,
+    "min_input_observed_bins": 27,
+    "min_target_observed_bins": 14,
+    "input_fill": "forward_fill",
+    "max_consecutive_missing_input_bins": 2,
+    "max_last_observation_age_seconds": 180,
+    "target_fill": "none",
+    "loss_and_metric_mask": "observed_and_finite",
+    "quarantine_events": [
+      {
+        "sensor_id": "Q-queens-boulevard-broadway-20q4s0",
+        "flood_start_utc": "2026-08-23T10:39:29Z",
+        "reason": "Unresolved summary vs series peak mismatch"
+      }
+    ]
+  },
+  "split": {
+    "method": "chronological_by_whole_event_and_date",
+    "target_ratios": [
+      0.7,
+      0.15,
+      0.15
+    ],
+    "embargo_after_cut_hours": 24,
+    "boundary_crossing_event_policy": "exclude",
+    "save_actual_dates_and_event_ids": true
+  },
+  "scaling": {
+    "method": "standard",
+    "fit_on": "unique_observed_training_input_bins",
+    "share_depth_transform_for_input_and_target": true
+  },
+  "model": {
+    "framework": "pytorch",
+    "type": "LSTM_direct_multioutput",
+    "input_size": 1,
+    "hidden_size": 64,
+    "num_layers": 1,
+    "batch_first": true,
+    "head_output_size": 15,
+    "output_shape_per_sample": [
+      15,
+      1
+    ]
+  },
+  "training": {
+    "loss": "masked_mae",
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "batch_size": 128,
+    "max_epochs": 50,
+    "early_stopping_patience": 8,
+    "gradient_clip_norm": 1,
+    "seed": 42,
+    "window_sampling": "equal_total_weight_per_event",
+    "selection_metric": "validation_observed_mae"
+  },
+  "evaluation": {
+    "baselines": [
+      "persistence",
+      "linear_last_5_minutes"
+    ],
+    "horizons_minutes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "metrics": [
+      "MAE_by_horizon",
+      "RMSE_by_horizon",
+      "event_macro_MAE",
+      "sensor_MAE",
+      "rise_fall_stable_MAE",
+      "high_depth_underprediction",
+      "threshold_crossing_errors",
+      "forecast_coverage"
+    ],
+    "direction_change_threshold_m": 0.01,
+    "threshold_depth_m": 0.4,
+    "threshold_time_eval_requires_all_future_bins_observed": true,
+    "threshold_kind": "external_depth_screening_project_assumption"
+  },
+  "runtime": {
+    "forecast_interval_seconds": 60,
+    "history_bins": 30,
+    "warmup_policy": "current_observation_alerts_only",
+    "invalid_input_policy": "invalidate_forecast_keep_current_observation_alerts",
+    "postprocess": "inverse_scale_then_clip_depth_below_zero",
+    "actuation_enabled": false
+  }
+}
