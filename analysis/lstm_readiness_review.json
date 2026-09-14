@@ -1,0 +1,440 @@
+{
+  "purpose": "LSTM data handoff and preprocessing revalidation",
+  "passed": true,
+  "source_sha256": "9fb087622390b21a4aae6506ab08b8c92d6fd2335a4c95a290753800ec064aa1",
+  "dataset_artifact_hashes": {
+    "config.json": {
+      "bytes": 3405,
+      "sha256": "45a27f979477912c551bb045b670f6de90eb61933f9c5a59461dff875b03c7be"
+    },
+    "event_audit.csv": {
+      "bytes": 783995,
+      "sha256": "96f20e03bde0d302e64288846ed509540ff5483d62e2806e7ab428fc412bee92"
+    },
+    "minute_bins.csv.gz": {
+      "bytes": 4606538,
+      "sha256": "e4b2be540683bf67d671229b48b0760f438c712a30cfc3bb870fba2604e11431"
+    },
+    "observations.csv.gz": {
+      "bytes": 3492881,
+      "sha256": "98eecb6891104ce9a56756891eff4564e51ea65217d0f3a2844743653674e7cb"
+    },
+    "samples.csv.gz": {
+      "bytes": 1431629,
+      "sha256": "9e6a398422658f3433c75398adbb47b6b2238ebeb6c9805bec068ecfadef8034"
+    },
+    "scaler.json": {
+      "bytes": 248,
+      "sha256": "e813adffedeaa56f06659e914aac21e74518c1ad5b52cfeaad865475aeed2306"
+    },
+    "segment_audit.csv": {
+      "bytes": 1927706,
+      "sha256": "e9c76c0c38a4bca13526d3b3329a097221f5476d3202c3302680d5cbbf7a2843"
+    },
+    "split_manifest.json": {
+      "bytes": 1190661,
+      "sha256": "552e84b8ba81d3b11ca6a6ddd06af6d2634edf49b4e3c1696b6b3ffd7700248b"
+    },
+    "test.npz": {
+      "bytes": 239622,
+      "sha256": "94eba0af411cbf7df2e0e611940c7e9d87385a7124dcd8732027476659fb650d"
+    },
+    "train.npz": {
+      "bytes": 1448106,
+      "sha256": "a29a778ff42ef05f6d0d8bbbc93cf853914ecbdfb149cecb29bbd3cfba55ad19"
+    },
+    "validation.npz": {
+      "bytes": 289607,
+      "sha256": "c6222e40c2f478e2220b66c89924b59bf7670e058c090504cf4a6a13dbaa1dbd"
+    }
+  },
+  "data_generation_implementation_sha256": "ff7225ee290c955f7d2d03a38fc71c8184e90c641c12d1b86f149e2c06befb37",
+  "review_code_sha256": {
+    "__init__.py": "cf49c4617687e7dc99e9ad0f85cccc06ccc7fa2d230d1a711950e92d72ae86c9",
+    "__main__.py": "9fb9f6e8f2a2f0afa774694ef5495fe43230541b0ff47e8cf3796c3949286d71",
+    "inference_input.py": "211f0591eae2b127a922e53bf48cde8743191a0722de59d34c9c790cec5a0831",
+    "io.py": "e88790c18b5e423ed761304d9081276dada80df96d06edb0b594edec80a1b1ef",
+    "lstm_check.py": "908dbef00f8ed726e31b0b8738878f7c6cd3b975b16157bc49edd5f1672a5a1b",
+    "pipeline.py": "f47f9b62bd35b0175634f5d558af75faaa82e5c8f3668eb1f53b24c720907281",
+    "preprocess.py": "d4781a227132aee3a3135f0dc47ea7a05af14695602332791e60597dcbe9ebcd",
+    "torch_data.py": "5a0511cb114b10e2f6d5ad8d79571c87815ab70afca0599012f3e2143c1268eb"
+  },
+  "runtime": {
+    "python": "3.13.9",
+    "torch": "2.11.0",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "device": "cpu"
+  },
+  "reviewed_documents": {
+    "forecast_pipeline.md": "af9afde70680727d597db6b5af8d2cbe7299cd4fb6686041d2ad4b0302c3bb86",
+    "ai_15_day_plan.md": "07838c22a55e37acdadcb7cc9612efec01acd267fd93d9a2ec2d90498e0f0908",
+    "two_week_execution_plan.md": "6541c980998de622b61b35ab8d55215a860cdb900f1d48a715e3a4d9e4670e29",
+    "2026 제5회 MEIT 예선 기획안_침수탈출넘버완.pdf": "2bda0d5d68708d486583c0274cb0a8b9342d12fd20d449976decb3ef29faf59a"
+  },
+  "specification_alignment": {
+    "forecast_scope": "User update and MD: all 1..15 minutes; original proposal's 5/10/15 wording is superseded.",
+    "model_input": "(B,30,1) standardized external depth only; IDs, ages, masks are metadata.",
+    "model_output": "(B,15,1), LSTM(1,64,1,batch_first=True) + Linear(64,15).",
+    "training": "Training-only event-balanced weighted sampler with replacement; masked MAE, Adam, gradient clipping.",
+    "normalization": "X and observed Y are already standardized; loader never fits or applies another scaler.",
+    "streaming": "Past-only input builder on fixed grid, with receive-time filtering and explicit WARMUP/INSUFFICIENT_DATA states.",
+    "finetuning": "Original scaler can be reused; actual small-scale run-ID datasets have not been supplied."
+  },
+  "artifact_verification": {
+    "passed": true,
+    "checks": [
+      "train: shapes, masks, timestamps, source values and weights verified",
+      "validation: shapes, masks, timestamps, source values and weights verified",
+      "test: shapes, masks, timestamps, source values and weights verified",
+      "unique observed training bins independently reconciled with scaler",
+      "all split events disjoint and chronological",
+      "all saved samples reconciled with minute tables",
+      "all recorded artifact SHA-256 hashes verified"
+    ]
+  },
+  "independent_csv_and_streaming_checks": {
+    "train": {
+      "segments_checked": 1203,
+      "samples_checked": 2376,
+      "target_positions_checked_directly_against_csv": 35640,
+      "raw_target_and_mask_match": true,
+      "past_only_streaming_input_exact_match": true
+    },
+    "validation": {
+      "segments_checked": 253,
+      "samples_checked": 504,
+      "target_positions_checked_directly_against_csv": 7560,
+      "raw_target_and_mask_match": true,
+      "past_only_streaming_input_exact_match": true
+    },
+    "test": {
+      "segments_checked": 220,
+      "samples_checked": 435,
+      "target_positions_checked_directly_against_csv": 6525,
+      "raw_target_and_mask_match": true,
+      "past_only_streaming_input_exact_match": true
+    }
+  },
+  "pytorch_optimizer_check": {
+    "purpose": "integration_check_only_not_performance_estimation",
+    "model": {
+      "framework": "pytorch",
+      "type": "LSTM_direct_multioutput",
+      "input_size": 1,
+      "hidden_size": 64,
+      "num_layers": 1,
+      "batch_first": true,
+      "head_output_size": 15,
+      "output_shape_per_sample": [
+        15,
+        1
+      ]
+    },
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "batch_size": 128,
+    "training_steps": 8,
+    "training_samples_drawn_with_replacement": 1024,
+    "standardized_masked_training_losses": [
+      0.7088422775268555,
+      0.6543463468551636,
+      0.6410765051841736,
+      0.6192998886108398,
+      0.6098224520683289,
+      0.679415762424469,
+      0.6962289810180664,
+      0.6632290482521057
+    ],
+    "observed_labels_per_step": [
+      1842,
+      1843,
+      1842,
+      1837,
+      1842,
+      1839,
+      1849,
+      1839
+    ],
+    "finite_gradients_and_parameter_updates": true,
+    "validation_test_do_not_update_weights": true,
+    "model_weights_saved": false,
+    "evaluation_shape_checks": {
+      "validation": {
+        "batch_shape": [
+          128,
+          30,
+          1
+        ],
+        "output_shape": [
+          128,
+          15,
+          1
+        ],
+        "finite_predictions": true,
+        "observed_targets_by_horizon": [
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128,
+          128
+        ]
+      },
+      "test": {
+        "batch_shape": [
+          128,
+          30,
+          1
+        ],
+        "output_shape": [
+          128,
+          15,
+          1
+        ],
+        "finite_predictions": true,
+        "observed_targets_by_horizon": [
+          125,
+          125,
+          126,
+          126,
+          126,
+          126,
+          126,
+          126,
+          126,
+          125,
+          125,
+          125,
+          125,
+          124,
+          123
+        ]
+      }
+    }
+  },
+  "distribution_and_coverage": {
+    "train": {
+      "all_event_origins_after_30_min_history_including_gaps": 304142,
+      "input_quality_ready_origins_in_retained_segments": 150038,
+      "retained_segment_input_coverage_fraction": 0.49331562230800086,
+      "coverage_definition": "Conservative retained-segment input count divided by all in-event minute origins with elapsed 30-minute history; not operational uptime.",
+      "rising_sample_fraction": 0.09721190653030909,
+      "unseen_sensors_relative_to_train": 0,
+      "samples_from_unseen_sensors": 0,
+      "largest_sensor_sample_count": {
+        "SI-quincy-ave-iona-st-1deh00": 14260
+      },
+      "threshold_crossing_events_evaluable": 22
+    },
+    "validation": {
+      "all_event_origins_after_30_min_history_including_gaps": 44389,
+      "input_quality_ready_origins_in_retained_segments": 30524,
+      "retained_segment_input_coverage_fraction": 0.6876478406812498,
+      "coverage_definition": "Conservative retained-segment input count divided by all in-event minute origins with elapsed 30-minute history; not operational uptime.",
+      "rising_sample_fraction": 0.12909844309450055,
+      "unseen_sensors_relative_to_train": 30,
+      "samples_from_unseen_sensors": 6470,
+      "largest_sensor_sample_count": {
+        "Q-beach-84th-st-beach-channel-dr-2nf0xc": 3295
+      },
+      "threshold_crossing_events_evaluable": 3
+    },
+    "test": {
+      "all_event_origins_after_30_min_history_including_gaps": 35941,
+      "input_quality_ready_origins_in_retained_segments": 25358,
+      "retained_segment_input_coverage_fraction": 0.7055451990762639,
+      "coverage_definition": "Conservative retained-segment input count divided by all in-event minute origins with elapsed 30-minute history; not operational uptime.",
+      "rising_sample_fraction": 0.08658072077351305,
+      "unseen_sensors_relative_to_train": 38,
+      "samples_from_unseen_sensors": 6738,
+      "largest_sensor_sample_count": {
+        "BX-ditmars-st-hunter-ave-1kwrk0": 3589
+      },
+      "threshold_crossing_events_evaluable": 0
+    }
+  },
+  "additional_quarantine_policy_review": {
+    "policy_origin": "Initial preprocessing assumption; 1 cm discrepancy cutoff is not specified in the proposal or original MD design.",
+    "meaning": "Review hold, not proof of sensor error. Raw values are preserved; this audit does not restore or resplit events.",
+    "events": [
+      {
+        "event_id": "BX-ditmars-st-hunter-ave-1kwrk0__2025-03-01T03:22:37Z",
+        "source_record": 1560,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "BX-ditmars-st-hunter-ave-1kwrk0__2025-03-01T15:41:32Z",
+        "source_record": 188,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "BX-ditmars-st-hunter-ave-1kwrk0__2025-03-05T23:15:01Z",
+        "source_record": 1879,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "BX-ditmars-st-hunter-ave-1kwrk0__2025-03-06T01:52:00Z",
+        "source_record": 84,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "BX-ditmars-st-hunter-ave-1kwrk0__2025-03-06T03:08:54Z",
+        "source_record": 285,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "BK-lee-ave-middleton-st-19qok0__2025-10-30T18:58:43Z",
+        "source_record": 712,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "Q-bell-blvd-northern-blvd-2kxsno__2025-10-30T19:54:00Z",
+        "source_record": 51,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 7,
+        "split_with_current_fixed_boundaries": "train",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "BK-winthrop-st-e-94th-st-1dnt40__2026-07-06T02:47:21Z",
+        "source_record": 2592,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 118,
+        "split_with_current_fixed_boundaries": "validation",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "SI-richmond-ter-lafayette-ave-2upl3o__2026-08-03T10:44:00Z",
+        "source_record": 2852,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 32,
+        "split_with_current_fixed_boundaries": "test",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "Q-norton-dr-westbourne-ave-1-2wif1c__2026-08-20T21:12:06Z",
+        "source_record": 3168,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 25,
+        "split_with_current_fixed_boundaries": "test",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "Q-moncriff-dr-104th-st-2z1iuo__2026-08-20T21:57:44Z",
+        "source_record": 3057,
+        "reasons": [
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 0,
+        "split_with_current_fixed_boundaries": "test",
+        "included_in_saved_data": false
+      },
+      {
+        "event_id": "Q-queens-boulevard-broadway-20q4s0__2026-08-23T10:39:29Z",
+        "source_record": 2977,
+        "reasons": [
+          "configured_quarantine",
+          "large_summary_peak_difference"
+        ],
+        "sample_count_if_quality_quarantine_lifted": 11,
+        "split_with_current_fixed_boundaries": "test",
+        "included_in_saved_data": false
+      }
+    ],
+    "additional_events_beyond_explicit_MD_hold": 11
+  },
+  "remaining_requirements": [
+    {
+      "item": "Forecast performance and model selection",
+      "status": "not_yet_evaluated",
+      "detail": "Run persistence, recent-five-minute linear baseline, and full LSTM training using identical origins/masks; select on validation only. Eight optimizer steps validate integration, not accuracy."
+    },
+    {
+      "item": "Threshold-onset evaluation",
+      "status": "insufficient_test_cases",
+      "detail": "Current test split has zero fully observed from-below crossings; use additional chronological development folds and new independent crossing records. Keep the existing test split fixed."
+    },
+    {
+      "item": "Unseen sensors and phase imbalance",
+      "status": "requires_grouped_evaluation",
+      "detail": "Report event-macro, sensor, seen/unseen-sensor and rising/falling/stable errors; equal-event sampling does not ensure equal-sensor or equal-phase sampling."
+    },
+    {
+      "item": "Twelve quarantined events",
+      "status": "requires_source_review",
+      "detail": "Eleven holds were added by the initial 1 cm discrepancy rule; report their impact and resolve against source evidence before relaxing it."
+    },
+    {
+      "item": "Small-scale finetuning and live operation",
+      "status": "requires_new_observations",
+      "required_fields": [
+        "run_id",
+        "measurement_time_utc",
+        "received_time_utc",
+        "external_depth_m",
+        "internal_depth_m",
+        "observation_status",
+        "calibration_version",
+        "pump_state",
+        "valve_state",
+        "control_change_time",
+        "scenario",
+        "preassigned_split"
+      ],
+      "detail": "Collect at least 45 actual minutes per usable sequence, preferably 60–90; use separate run IDs and retain the FloodNet scaler initially. No synthetic dry history, time stretching or copied runs."
+    },
+    {
+      "item": "Door-opening/evacuation interpretation",
+      "status": "outside_external_depth_labels",
+      "detail": "Needs indoor measurements and independently verified physical assumptions; external 0.40 m crossing alone is not door-opening or evacuation ground truth."
+    }
+  ]
+}

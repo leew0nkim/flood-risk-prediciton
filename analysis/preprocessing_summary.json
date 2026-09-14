@@ -1,0 +1,298 @@
+{
+  "source": "export.csv",
+  "source_sha256": "9fb087622390b21a4aae6506ab08b8c92d6fd2335a4c95a290753800ec064aa1",
+  "config_sha256": "45a27f979477912c551bb045b670f6de90eb61933f9c5a59461dff875b03c7be",
+  "implementation_sha256": "ff7225ee290c955f7d2d03a38fc71c8184e90c641c12d1b86f149e2c06befb37",
+  "runtime": {
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "pandas": "2.2.3"
+  },
+  "contract": {
+    "input_minutes": 30,
+    "forecast_minutes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "bin_seconds": 60,
+    "depth_unit_before_scaling": "m",
+    "saved_depth_arrays": "standardized_float32"
+  },
+  "raw": {
+    "records": 3184,
+    "columns": 13,
+    "sensors": 308,
+    "blank_cells": {
+      "Sensor Name": 0,
+      "Sensor ID": 0,
+      "Flood Start Datetime (GMT)": 0,
+      "Flood End Datetime (GMT)": 0,
+      "Maximum Flood Depth (inches)": 0,
+      "Time to Maximum Flood Depth (minutes)": 0,
+      "Time to Drain From Peak (minutes)": 1,
+      "Total Duration (minutes)": 0,
+      "Duration of Flooding Greater Than 4 Inches (minutes)": 0,
+      "Duration of Flooding Greater Than 12 Inches (minutes)": 0,
+      "Duration of Flooding Greater Than 24 Inches (minutes)": 0,
+      "Time Series Depth Values (inches)": 0,
+      "Time Series Depth Timestamps (seconds)": 0
+    },
+    "numeric_comma_cells": {
+      "Maximum Flood Depth (inches)": 0,
+      "Time to Maximum Flood Depth (minutes)": 4,
+      "Time to Drain From Peak (minutes)": 18,
+      "Total Duration (minutes)": 29,
+      "Duration of Flooding Greater Than 4 Inches (minutes)": 1,
+      "Duration of Flooding Greater Than 12 Inches (minutes)": 0,
+      "Duration of Flooding Greater Than 24 Inches (minutes)": 0
+    },
+    "point_count_before_dedup": 376295,
+    "point_count_after_dedup": 376294,
+    "exact_duplicate_points_removed": 1,
+    "event_status_counts": {
+      "eligible": 3172,
+      "quarantined": 12
+    },
+    "summary_peak_mismatch_events": 52,
+    "high_depth_events_before_quarantine": 131
+  },
+  "exclusion_counts": {
+    "embargo": 95,
+    "quarantined": 12
+  },
+  "cut_dates_utc": [
+    "2026-04-21T00:00:00Z",
+    "2026-07-18T00:00:00Z"
+  ],
+  "scaler": {
+    "method": "standard",
+    "depth_unit": "m",
+    "mean_m": 0.10318894933185928,
+    "std_m": 0.10233336485961986,
+    "ddof": 0,
+    "fit_on": "unique_observed_training_input_bins",
+    "unique_observed_bin_count": 155581,
+    "shared_X_Y_transform": true
+  },
+  "splits": {
+    "train": {
+      "assigned_events": 2222,
+      "candidate_windows_before_gap_splitting": 276717,
+      "minute_bins": 281495,
+      "observed_minute_bins": 251516,
+      "history_origins_in_segments": 191881,
+      "input_quality_ready_origins": 150038,
+      "candidate_windows": 165633,
+      "accepted_windows": 105018,
+      "insufficient_input_observations": 32913,
+      "unfilled_input": 0,
+      "insufficient_target_observations": 27702,
+      "segments": 14975,
+      "segments_too_short_for_45_bins": 13388,
+      "events_with_samples": 1044,
+      "events_without_samples": 1178,
+      "X_shape": [
+        105018,
+        30,
+        1
+      ],
+      "Y_shape": [
+        105018,
+        15,
+        1
+      ],
+      "source_start_utc": "2020-11-16T01:41:17Z",
+      "source_end_utc": "2026-04-20T06:56:28Z",
+      "sensors_with_samples": 107,
+      "high_depth_events_with_samples": 43,
+      "observed_high_depth_windows": 2886,
+      "phase_counts": {
+        "stable": 59246,
+        "falling": 32131,
+        "rising": 10209,
+        "unknown": 3432
+      },
+      "observed_targets_by_horizon": [
+        101219,
+        101203,
+        101197,
+        101144,
+        101129,
+        101109,
+        101081,
+        101110,
+        101138,
+        101239,
+        101472,
+        101557,
+        101624,
+        101621,
+        101586
+      ],
+      "threshold_state_counts": {
+        "unavailable": 57277,
+        "not_reached": 45190,
+        "already_above": 2392,
+        "reached": 159
+      },
+      "unique_events_reaching_threshold_from_below": 22
+    },
+    "validation": {
+      "assigned_events": 435,
+      "candidate_windows_before_gap_splitting": 39367,
+      "minute_bins": 50995,
+      "observed_minute_bins": 47292,
+      "history_origins_in_segments": 34989,
+      "input_quality_ready_origins": 30524,
+      "candidate_windows": 30055,
+      "accepted_windows": 24857,
+      "insufficient_input_observations": 3457,
+      "unfilled_input": 0,
+      "insufficient_target_observations": 1741,
+      "segments": 1078,
+      "segments_too_short_for_45_bins": 782,
+      "events_with_samples": 237,
+      "events_without_samples": 198,
+      "X_shape": [
+        24857,
+        30,
+        1
+      ],
+      "Y_shape": [
+        24857,
+        15,
+        1
+      ],
+      "source_start_utc": "2026-04-22T03:37:24Z",
+      "source_end_utc": "2026-07-17T19:40:45Z",
+      "sensors_with_samples": 67,
+      "high_depth_events_with_samples": 13,
+      "observed_high_depth_windows": 367,
+      "phase_counts": {
+        "stable": 14378,
+        "falling": 6926,
+        "rising": 3209,
+        "unknown": 344
+      },
+      "observed_targets_by_horizon": [
+        24553,
+        24555,
+        24559,
+        24564,
+        24578,
+        24563,
+        24561,
+        24555,
+        24555,
+        24551,
+        24563,
+        24562,
+        24555,
+        24528,
+        24513
+      ],
+      "threshold_state_counts": {
+        "not_reached": 19750,
+        "unavailable": 4767,
+        "already_above": 318,
+        "reached": 22
+      },
+      "unique_events_reaching_threshold_from_below": 3
+    },
+    "test": {
+      "assigned_events": 420,
+      "candidate_windows_before_gap_splitting": 31781,
+      "minute_bins": 42217,
+      "observed_minute_bins": 39383,
+      "history_origins_in_segments": 28424,
+      "input_quality_ready_origins": 25358,
+      "candidate_windows": 23991,
+      "accepted_windows": 20478,
+      "insufficient_input_observations": 2290,
+      "unfilled_input": 0,
+      "insufficient_target_observations": 1223,
+      "segments": 922,
+      "segments_too_short_for_45_bins": 663,
+      "events_with_samples": 199,
+      "events_without_samples": 221,
+      "X_shape": [
+        20478,
+        30,
+        1
+      ],
+      "Y_shape": [
+        20478,
+        15,
+        1
+      ],
+      "source_start_utc": "2026-07-19T00:01:03Z",
+      "source_end_utc": "2026-08-23T17:46:07Z",
+      "sensors_with_samples": 69,
+      "high_depth_events_with_samples": 9,
+      "observed_high_depth_windows": 79,
+      "phase_counts": {
+        "stable": 13282,
+        "falling": 5077,
+        "rising": 1773,
+        "unknown": 346
+      },
+      "observed_targets_by_horizon": [
+        20159,
+        20167,
+        20171,
+        20171,
+        20175,
+        20160,
+        20155,
+        20153,
+        20147,
+        20146,
+        20170,
+        20173,
+        20179,
+        20151,
+        20132
+      ],
+      "threshold_state_counts": {
+        "not_reached": 15363,
+        "unavailable": 5038,
+        "already_above": 77
+      },
+      "unique_events_reaching_threshold_from_below": 0
+    }
+  },
+  "verification": {
+    "passed": true,
+    "checks": [
+      "train: shapes, masks, timestamps, source values and weights verified",
+      "validation: shapes, masks, timestamps, source values and weights verified",
+      "test: shapes, masks, timestamps, source values and weights verified",
+      "unique observed training bins independently reconciled with scaler",
+      "all split events disjoint and chronological",
+      "all saved samples reconciled with minute tables"
+    ]
+  },
+  "limits": [
+    "Event exports omit continuous dry periods and pre-event history; no zero-padding was added.",
+    "Summary peak differences above 0.01 m are conservatively quarantined pending review.",
+    "Same-date grouping and 24-hour embargo do not establish storm independence.",
+    "Targets are the last observed depth in each future minute bin; missing labels remain NaN.",
+    "External depth threshold 0.40 m is a project screening assumption, not a label for door opening or evacuation.",
+    "Observation timestamps are assumed available without network latency; received timestamps are absent.",
+    "Source event selection and retrospective quality filtering can bias continuous-stream performance.",
+    "Test split has zero evaluable from-below threshold crossings with fully observed future labels; threshold-onset recall and arrival-time error cannot be estimated on this split."
+  ]
+}

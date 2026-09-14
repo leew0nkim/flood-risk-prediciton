@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meit-data"
+version = "0.1.0"
+description = "Causal FloodNet preprocessing for 30-minute history and 15-minute forecasts"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24,<3", "pandas>=2.0,<3"]
+
+[project.optional-dependencies]
+torch = ["torch>=2.0,<3"]
+
+[project.scripts]
+meit-preprocess = "meit_data.pipeline:main"
+
+[tool.setuptools.packages.find]
+include = ["meit_data*"]
