@@ -37,7 +37,7 @@ class CausalPreprocessingTests(unittest.TestCase):
     def test_right_boundary_and_last_observation(self):
         bins = self.bins([0, 20, 59, 60, 61, 120], [0, 1, 2, 3, 4, 5])
         np.testing.assert_array_equal(bins.observed_depth_m, [3, 5])
-        partial = self.bins([0, 60, 61, 120], [0, 3, 4, 5], [60, 90])
+        partial = self.bins([0, 60, 61, 121], [0, 3, 4, 5], [60, 120])
         self.assertEqual(partial.observed_depth_m.tolist(), [3, 4])
 
     def test_future_values_cannot_change_input(self):
@@ -47,6 +47,8 @@ class CausalPreprocessingTests(unittest.TestCase):
         depths[seconds > 1800] = 999
         second = self.bins(seconds, depths)
         pd.testing.assert_frame_equal(first.iloc[:30], second.iloc[:30])
+        prefix = self.bins(seconds[seconds <= 1800])
+        pd.testing.assert_frame_equal(first.iloc[:30], prefix)
         first_windows, _ = make_windows(first, self.config)
         second_windows, _ = make_windows(second, self.config)
         np.testing.assert_array_equal(first_windows["X"][0], second_windows["X"][0])
