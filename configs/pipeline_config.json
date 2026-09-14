@@ -47,6 +47,8 @@
     "max_last_observation_age_seconds": 180,
     "target_fill": "none",
     "loss_and_metric_mask": "observed_and_finite",
+    "summary_peak_review_tolerance_inches": 0.011,
+    "summary_peak_quarantine_difference_m": 0.01,
     "quarantine_events": [
       {
         "sensor_id": "Q-queens-boulevard-broadway-20q4s0",
