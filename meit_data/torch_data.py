@@ -27,8 +27,8 @@ class ForecastDataset(Dataset):
     """Load one verified split. No rescaling, shuffling or dropping labels here."""
 
     def __init__(self, directory, split):
-        if split not in ("train", "validation", "test"):
-            raise ValueError("split must be train, validation or test")
+        if split not in ("train", "validation", "test_temporal", "test_risk"):
+            raise ValueError("split must be train, validation, test_temporal or test_risk")
         directory = Path(directory)
         self.split = split
         manifest = json.loads((directory / "data_manifest.json").read_text())
@@ -65,7 +65,7 @@ class ForecastDataset(Dataset):
 
 
 def make_loader(dataset, batch_size=None, seed=None):
-    """One epoch has len(train) draws; validation/test are complete and ordered.
+    """One epoch has len(train) draws; all evaluation splits are complete and ordered.
 
     num_workers=0 works in scripts and notebooks without platform-specific
     multiprocessing setup. An independent generator makes sampling repeatable.

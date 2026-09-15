@@ -72,9 +72,9 @@ class EventAuditTests(unittest.TestCase):
         assign_splits(events, config())
         self.assertEqual(prior.split_reason, "boundary_crossing_event")
         self.assertTrue(all(e.split_reason == "embargo" for e in events if e.start == first_cut))
-        by_split = {s: [e for e in events if e.split == s] for s in ("train", "validation", "test")}
+        by_split = {s: [e for e in events if e.split == s] for s in ("train", "validation", "test_temporal")}
         self.assertLess(max(e.effective_end for e in by_split["train"]), min(e.start for e in by_split["validation"]))
-        self.assertLess(max(e.effective_end for e in by_split["validation"]), min(e.start for e in by_split["test"]))
+        self.assertLess(max(e.effective_end for e in by_split["validation"]), min(e.start for e in by_split["test_temporal"]))
         for date in {e.start for e in events}:
             self.assertLessEqual(len({e.split for e in events if e.start == date and e.split != "excluded"}), 1)
 

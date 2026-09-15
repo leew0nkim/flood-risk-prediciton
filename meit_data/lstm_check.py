@@ -4,7 +4,7 @@ Run with a Python environment containing the optional torch dependency:
     python -m meit_data.lstm_check
 
 The optimizer runs eight training-only batches to test connectivity and finite
-gradients. No fitted model is saved and no validation/test data updates weights.
+gradients. No fitted model is saved and no evaluation data updates weights.
 The report is an integration audit, not a forecast-performance claim.
 """
 
@@ -20,7 +20,7 @@ import torch
 
 from .inference_input import prepare_input
 from .io import DEPTH, SECONDS, assign_splits, read_events
-from .pipeline import sha256, verify_outputs, write_json
+from .pipeline import SPLITS, assign_risk_holdout, sha256, verify_outputs, write_json
 from .preprocess import complete_bin_ends, event_segments, make_windows
 from .torch_data import ForecastDataset, depth_to_m, horizon_errors, make_loader, masked_mae
 
@@ -119,7 +119,7 @@ def optimizer_check(datasets):
     evaluation = {}
     model.eval()
     with torch.no_grad():
-        for split in ("validation", "test"):
+        for split in ("validation", "test_temporal", "test_risk"):
             batch = next(iter(make_loader(datasets[split])))
             output = model(batch["X"])
             predicted_m = depth_to_m(output, datasets[split].scaler, clip_negative=True)
@@ -136,14 +136,14 @@ def optimizer_check(datasets):
             "batch_size": config["training"]["batch_size"], "training_steps": len(losses),
             "training_samples_drawn_with_replacement": len(losses) * config["training"]["batch_size"],
             "standardized_masked_training_losses": losses, "observed_labels_per_step": valid_labels,
-            "finite_gradients_and_parameter_updates": True, "validation_test_do_not_update_weights": True,
+            "finite_gradients_and_parameter_updates": True, "evaluation_splits_do_not_update_weights": True,
             "model_weights_saved": False, "evaluation_shape_checks": evaluation}
 
 
 def coverage_and_quarantine(source, directory, datasets):
     config = datasets["train"].config
     events, _, _ = read_events(source, config)
-    generated_manifest = assign_splits(events, config)
+    generated_manifest = assign_risk_holdout(events, config, assign_splits(events, config))
     original_manifest = json.loads((directory / "split_manifest.json").read_text())
     if generated_manifest != original_manifest:
         raise AssertionError("Current source/config does not reproduce the saved event assignments")
@@ -176,7 +176,7 @@ def coverage_and_quarantine(source, directory, datasets):
             continue
         windows = sum(make_windows(bins, config)[1]["accepted_windows"] for _, _, bins in event_segments(event, config))
         temporal_exclusion = any(event.start < cut <= event.effective_end or cut <= event.start < cut + embargo for cut in cuts)
-        provisional_split = "train" if event.start < cuts[0] else "validation" if event.start < cuts[1] else "test"
+        provisional_split = "train" if event.start < cuts[0] else "validation" if event.start < cuts[1] else "test_temporal"
         quarantine.append({"event_id": event.event_id, "source_record": event.source_record,
                            "reasons": event.quarantine, "sample_count_if_quality_quarantine_lifted": windows,
                            "split_with_current_fixed_boundaries": "excluded_by_time" if temporal_exclusion else provisional_split,
@@ -195,7 +195,7 @@ def run_check(source, directory, report):
     if sha256(source) != manifest["source_sha256"]:
         raise ValueError("Source hash differs from the data-generation source")
     artifact_verification = verify_outputs(directory)
-    datasets = {split: ForecastDataset(directory, split) for split in ("train", "validation", "test")}
+    datasets = {split: ForecastDataset(directory, split) for split in SPLITS}
     raw_streaming = raw_and_streaming_checks(source, directory, datasets)
     optimizer = optimizer_check(datasets)
     distribution, quarantine = coverage_and_quarantine(source, directory, datasets)
@@ -215,6 +215,7 @@ def run_check(source, directory, report):
             "model_output": "(B,15,1), LSTM(1,64,1,batch_first=True) + Linear(64,15).",
             "training": "Training-only event-balanced weighted sampler with replacement; masked MAE, Adam, gradient clipping.",
             "normalization": "X and observed Y are already standardized; loader never fits or applies another scaler.",
+            "thresholds": "Evaluate 0.30 m warning and 0.40 m critical onset from the same continuous 1..15 minute forecasts.",
             "streaming": "Past-only input builder on fixed grid, with receive-time filtering and explicit WARMUP/INSUFFICIENT_DATA states.",
             "finetuning": "Original scaler can be reused; actual small-scale run-ID datasets have not been supplied.",
         },
@@ -226,8 +227,8 @@ def run_check(source, directory, report):
         "remaining_requirements": [
             {"item": "Forecast performance and model selection", "status": "not_yet_evaluated",
              "detail": "Run persistence, recent-five-minute linear baseline, and full LSTM training using identical origins/masks; select on validation only. Eight optimizer steps validate integration, not accuracy."},
-            {"item": "Threshold-onset evaluation", "status": "insufficient_test_cases",
-             "detail": "Current test split has zero fully observed from-below crossings; use additional chronological development folds and new independent crossing records. Keep the existing test split fixed."},
+            {"item": "Threshold-onset evaluation", "status": "risk_test_added",
+             "detail": "Use test_risk for 0.30 m warning and 0.40 m critical onset, and test_temporal for future-period generalization. Never tune on either test split; report the independent event and UTC-date counts with metrics."},
             {"item": "Unseen sensors and phase imbalance", "status": "requires_grouped_evaluation",
              "detail": "Report event-macro, sensor, seen/unseen-sensor and rising/falling/stable errors; equal-event sampling does not ensure equal-sensor or equal-phase sampling."},
             {"item": "Twelve quarantined events", "status": "requires_source_review",
@@ -236,7 +237,7 @@ def run_check(source, directory, report):
              "required_fields": ["run_id", "measurement_time_utc", "received_time_utc", "external_depth_m", "internal_depth_m", "observation_status", "calibration_version", "pump_state", "valve_state", "control_change_time", "scenario", "preassigned_split"],
              "detail": "Collect at least 45 actual minutes per usable sequence, preferably 60–90; use separate run IDs and retain the FloodNet scaler initially. No synthetic dry history, time stretching or copied runs."},
             {"item": "Door-opening/evacuation interpretation", "status": "outside_external_depth_labels",
-             "detail": "Needs indoor measurements and independently verified physical assumptions; external 0.40 m crossing alone is not door-opening or evacuation ground truth."},
+             "detail": "Needs indoor measurements and independently verified physical assumptions; external 0.30/0.40 m crossings alone are not door-opening or evacuation ground truth."},
         ],
     }
     report.parent.mkdir(parents=True, exist_ok=True)

@@ -25,7 +25,7 @@ def validate_config(config):
         ("window", "horizon_minutes"): list(range(1, 16)),
         ("quality", "input_fill"): "forward_fill", ("quality", "target_fill"): "none",
         ("quality", "loss_and_metric_mask"): "observed_and_finite",
-        ("split", "method"): "chronological_by_whole_event_and_date",
+        ("split", "method"): "chronological_with_grouped_risk_holdout",
         ("split", "boundary_crossing_event_policy"): "exclude",
         ("scaling", "method"): "standard",
         ("scaling", "fit_on"): "unique_observed_training_input_bins",
@@ -54,6 +54,32 @@ def validate_config(config):
         raise ValueError("Split ratios must contain three positive values summing to one")
     if not np.isfinite(config["split"]["embargo_after_cut_hours"]) or config["split"]["embargo_after_cut_hours"] < 0:
         raise ValueError("Invalid embargo duration")
+    risk = config["split"].get("risk_test", {})
+    expected_risk = {
+        "source_temporal_split": "train",
+        "group_by": "utc_event_start_date",
+        "selection": "explicit_pretraining_dates_from_sha256_seeded_crossing_date_order",
+    }
+    for key, expected in expected_risk.items():
+        if risk.get(key) != expected:
+            raise ValueError(f"Unsupported split.risk_test.{key}: expected {expected!r}")
+    for key in ("seed", "minimum_dates", "minimum_crossing_events"):
+        minimum = 0 if key == "seed" else 1
+        if not isinstance(risk.get(key), int) or risk[key] < minimum:
+            raise ValueError(f"Invalid split.risk_test.{key}")
+    dates = risk.get("selected_dates_utc")
+    if not isinstance(dates, list) or len(dates) < risk["minimum_dates"] or len(set(dates)) != len(dates):
+        raise ValueError("Invalid split.risk_test.selected_dates_utc")
+    for value in dates:
+        timestamp = pd.Timestamp(value)
+        if (timestamp.tzinfo is None or timestamp.utcoffset() != pd.Timedelta(0)
+                or timestamp != timestamp.normalize()):
+            raise ValueError("Risk-test dates must be UTC-aware midnight timestamps")
+    warning = config["evaluation"].get("warning_threshold_depth_m")
+    critical = config["evaluation"].get("threshold_depth_m")
+    if (not np.isfinite(warning) or not np.isfinite(critical)
+            or warning <= 0 or warning >= critical):
+        raise ValueError("Warning threshold must be positive and below the critical threshold")
 
 
 def complete_bin_ends(first_second, last_second, width=60):
