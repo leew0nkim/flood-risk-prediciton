@@ -16,4 +16,4 @@ torch = ["torch>=2.0,<3"]
 meit-preprocess = "meit_data.pipeline:main"
 
 [tool.setuptools.packages.find]
-include = ["meit_data*"]
+include = ["meit_data*", "meit_model*"]

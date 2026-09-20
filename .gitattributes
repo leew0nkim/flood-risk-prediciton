@@ -1,0 +1,3 @@
+# Generated artifacts are hashed byte-for-byte in data_manifest.json.
+# Preserve their original bytes on every platform, including text artifacts.
+data/processed/** -text
