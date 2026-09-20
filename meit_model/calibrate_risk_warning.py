@@ -539,6 +539,16 @@ def pool_results(
         )
     )
 
+    pooled["false_positive_rate"] = safe_divide(
+        pooled["fp"],
+        pooled["fp"] + pooled["tn"],
+    )
+
+    pooled["alarm_rate"] = safe_divide(
+        pooled["predicted_alarms"],
+        pooled["eligible_samples"],
+    )
+
     return pooled
 
 
@@ -781,6 +791,16 @@ def main():
             pooled["fp"],
         )
 
+        print(
+            "  FPR            :",
+            percentage(pooled["false_positive_rate"]),
+        )
+
+        print(
+            "  Alarm rate     :",
+            percentage(pooled["alarm_rate"]),
+        )
+
     # ========================================================
     # 2. LSTM + Linear safety guard
     #
@@ -924,6 +944,16 @@ def main():
         print(
             "  False alarms   :",
             pooled["fp"],
+        )
+
+        print(
+            "  FPR            :",
+            percentage(pooled["false_positive_rate"]),
+        )
+
+        print(
+            "  Alarm rate     :",
+            percentage(pooled["alarm_rate"]),
         )
 
     # ========================================================
