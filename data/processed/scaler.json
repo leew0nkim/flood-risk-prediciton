@@ -1,10 +1,10 @@
 {
   "method": "standard",
   "depth_unit": "m",
-  "mean_m": 0.10318894933185928,
-  "std_m": 0.10233336485961986,
+  "mean_m": 0.09987502432707555,
+  "std_m": 0.09922383881199749,
   "ddof": 0,
   "fit_on": "unique_observed_training_input_bins",
-  "unique_observed_bin_count": 155581,
+  "unique_observed_bin_count": 144407,
   "shared_X_Y_transform": true
 }

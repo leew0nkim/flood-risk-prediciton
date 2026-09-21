@@ -27,7 +27,8 @@ from .preprocess import (complete_bin_ends, event_sampling_weights,
                          scaler_bin_mask, validate_config)
 
 
-SPLITS = ("train", "validation", "test")
+SPLITS = ("train", "validation", "test_temporal", "test_risk")
+TEMPORAL_SPLITS = ("train", "validation", "test_temporal")
 
 
 def sha256(path):
@@ -57,8 +58,31 @@ def observations_table(events):
             "relative_seconds": event.seconds, "depth_m": event.depth_m,
             "quality_flags": ";".join(event.flags),
             "quarantine_reasons": ";".join(event.quarantine), "split": event.split,
+            "temporal_split": event.temporal_split,
         }))
     return pd.concat(frames, ignore_index=True)
+
+
+def threshold_labels(windows, threshold):
+    current = windows["X"][:, -1, 0]
+    future = windows["Y"][:, :, 0]
+    fully_observed = windows["Y_mask"][:, :, 0].all(axis=1) & windows["X_observed"][:, -1, 0]
+    crosses = future >= threshold
+    crossing_time = np.full(len(current), np.nan)
+    state = np.full(len(current), "unavailable", dtype="U20")
+    state[fully_observed] = "not_reached"
+    reaches = fully_observed & (current < threshold) & crosses.any(axis=1)
+    state[reaches] = "reached"
+    crossing_time[reaches] = crosses[reaches].argmax(axis=1) + 1
+    above_now = windows["X_observed"][:, -1, 0] & (current >= threshold)
+    state[above_now] = "already_above"
+    crossing_time[above_now] = 0
+    return {
+        "observed_high_depth_window": (current >= threshold) | crosses.any(axis=1),
+        "threshold_evaluable_all_future_observed": fully_observed,
+        "external_depth_threshold_state": state,
+        "external_depth_threshold_first_bin_minutes": crossing_time,
+    }
 
 
 def sample_metadata(windows, split, events, config):
@@ -70,18 +94,8 @@ def sample_metadata(windows, split, events, config):
     phase[np.isfinite(delta)] = "stable"
     phase[delta > config["evaluation"]["direction_change_threshold_m"]] = "rising"
     phase[delta < -config["evaluation"]["direction_change_threshold_m"]] = "falling"
-    threshold = config["evaluation"]["threshold_depth_m"]
-    fully_observed = windows["Y_mask"][:, :, 0].all(axis=1) & windows["X_observed"][:, -1, 0]
-    crosses = future >= threshold
-    crossing_time = np.full(count, np.nan)
-    state = np.full(count, "unavailable", dtype="U20")
-    state[fully_observed] = "not_reached"
-    reaches = fully_observed & crosses.any(axis=1)
-    state[reaches] = "reached"
-    crossing_time[reaches] = crosses[reaches].argmax(axis=1) + 1
-    above_now = windows["X_observed"][:, -1, 0] & (current >= threshold)
-    state[above_now] = "already_above"
-    crossing_time[above_now] = 0
+    critical = threshold_labels(windows, config["evaluation"]["threshold_depth_m"])
+    warning = threshold_labels(windows, config["evaluation"]["warning_threshold_depth_m"])
     event_ids = windows["event_index"]
     return pd.DataFrame({
         "sample_index": np.arange(count), "split": split,
@@ -93,12 +107,103 @@ def sample_metadata(windows, split, events, config):
         "input_observed_bins": windows["X_observed"].sum(axis=(1, 2)),
         "target_observed_bins": windows["Y_mask"].sum(axis=(1, 2)),
         "phase_at_15_minutes": phase,
-        "observed_high_depth_window": (current >= threshold) | (future >= threshold).any(axis=1),
-        "threshold_evaluable_all_future_observed": fully_observed,
-        "external_depth_threshold_state": state,
-        "external_depth_threshold_first_bin_minutes": crossing_time,
+        **critical,
+        "warning_observed_high_depth_window": warning["observed_high_depth_window"],
+        "warning_threshold_evaluable_all_future_observed": warning["threshold_evaluable_all_future_observed"],
+        "warning_external_depth_threshold_state": warning["external_depth_threshold_state"],
+        "warning_external_depth_threshold_first_bin_minutes": warning["external_depth_threshold_first_bin_minutes"],
         "sampling_weight": windows["sample_weight"],
     })
+
+
+def select_risk_dates(crossing_events_by_date, settings):
+    """Select one deterministic date from each chronological candidate stratum."""
+    dates = sorted(crossing_events_by_date)
+    stratum_count = settings["minimum_dates"]
+    if len(dates) < stratum_count:
+        raise ValueError("Too few candidate dates for chronology-stratified risk selection")
+    strata = np.array_split(np.asarray(dates, dtype=object), stratum_count)
+
+    def hash_order(date):
+        value = f"{settings['seed']}:{utc_string(date)}"
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    selected = [min(stratum.tolist(), key=hash_order) for stratum in strata]
+    return selected, [[utc_string(date) for date in stratum] for stratum in strata]
+
+
+def assign_risk_holdout(events, config, manifest):
+    """Move complete UTC start dates from temporal train into a fixed risk test.
+
+    Candidate dates must contain an event with a fully observed, from-below
+    crossing within the 15-minute target. The selected dates were fixed in the
+    config before model training, so reruns never choose them from model errors.
+    """
+    settings = config["split"]["risk_test"]
+    threshold = config["evaluation"]["threshold_depth_m"]
+    crossing_events_by_date = {}
+    for event in events:
+        if event.temporal_split != settings["source_temporal_split"] or event.depth_m.max() < threshold:
+            continue
+        has_crossing = False
+        for _, _, bins in event_segments(event, config):
+            windows, _ = make_windows(bins, config)
+            if not len(windows["X"]):
+                continue
+            current = windows["X"][:, -1, 0]
+            fully_observed = windows["Y_mask"][:, :, 0].all(axis=1) & windows["X_observed"][:, -1, 0]
+            reaches = fully_observed & (current < threshold) & (windows["Y"][:, :, 0] >= threshold).any(axis=1)
+            if reaches.any():
+                has_crossing = True
+                break
+        if has_crossing:
+            date = event.start.normalize()
+            crossing_events_by_date.setdefault(date, []).append(event.event_index)
+    if not crossing_events_by_date:
+        raise ValueError("No evaluable from-below threshold crossings available for risk test")
+    expected_dates, chronological_strata = select_risk_dates(crossing_events_by_date, settings)
+    selected_dates = {pd.Timestamp(value) for value in settings["selected_dates_utc"]}
+    if selected_dates != set(expected_dates):
+        raise ValueError(
+            "Configured risk dates differ from chronology-stratified SHA-256 selection: "
+            f"expected {[utc_string(date) for date in expected_dates]}"
+        )
+    if not selected_dates.issubset(crossing_events_by_date):
+        missing = sorted(utc_string(date) for date in selected_dates - crossing_events_by_date.keys())
+        raise ValueError(f"Configured risk dates lack evaluable crossings in temporal train: {missing}")
+    selected_crossings = sum(len(crossing_events_by_date[date]) for date in selected_dates)
+    if selected_crossings < settings["minimum_crossing_events"]:
+        raise ValueError("Risk test minimum date/crossing coverage cannot be satisfied")
+    moved = []
+    for event in events:
+        if event.temporal_split == settings["source_temporal_split"] and event.start.normalize() in selected_dates:
+            event.split = "test_risk"
+            event.split_reason = "grouped_risk_holdout_date"
+            moved.append(event.event_index)
+    by_index = {event.event_index: event for event in events}
+    for item in manifest["events"]:
+        event = by_index[item["event_index"]]
+        item["split"] = event.split
+        item["temporal_split"] = event.temporal_split
+        item["exclusion_reason"] = event.split_reason
+    manifest["risk_test"] = {
+        **settings,
+        "critical_threshold_m": threshold,
+        "candidate_dates_with_evaluable_crossings": len(crossing_events_by_date),
+        "candidate_crossing_events": sum(map(len, crossing_events_by_date.values())),
+        "candidate_dates_utc": [utc_string(date) for date in sorted(crossing_events_by_date)],
+        "selection_procedure": {
+            "chronological_strata": len(chronological_strata),
+            "candidate_dates_by_stratum": chronological_strata,
+            "choice_within_each_stratum": "lowest sha256(seed:UTC-date)",
+        },
+        "selected_dates_utc": [utc_string(date) for date in sorted(selected_dates)],
+        "selected_event_count": len(moved),
+        "selected_crossing_event_count": selected_crossings,
+        "selection_frozen_before_model_training": True,
+        "selection_uses_model_predictions_or_errors": False,
+    }
+    return manifest
 
 
 def verify_outputs(directory):
@@ -151,6 +256,12 @@ def verify_outputs(directory):
             require(np.array_equal(meta.event_index, ids), "Metadata event order mismatch")
             require(np.array_equal(meta.segment_index, data["segment_index"]), "Metadata segment order mismatch")
             require(np.array_equal(pd.to_datetime(meta.origin_time_utc, utc=True).astype("int64") // 10**9, origins), "Metadata origin order mismatch")
+            source_windows = {
+                "X": np.empty(data["X"].shape, dtype=np.float64),
+                "Y": np.full(data["Y"].shape, np.nan, dtype=np.float64),
+                "X_observed": data["X_observed"],
+                "Y_mask": data["Y_mask"],
+            }
             for segment_id in np.unique(data["segment_index"]):
                 selected = np.flatnonzero(data["segment_index"] == segment_id)
                 segment = segments.loc[int(segment_id)]
@@ -170,29 +281,66 @@ def verify_outputs(directory):
                 y_rows = starts[:, None] + lookback + np.arange(horizon)
                 expected_x = group.causal_input_depth_m.to_numpy()[x_rows]
                 expected_y = group.observed_depth_m.to_numpy()[y_rows]
+                source_windows["X"][selected, :, 0] = expected_x
+                source_windows["Y"][selected, :, 0] = expected_y
                 actual_x = data["X"][selected, :, 0] * scaler["std_m"] + scaler["mean_m"]
                 actual_y = data["Y"][selected, :, 0] * scaler["std_m"] + scaler["mean_m"]
                 require(np.allclose(actual_x, expected_x, atol=2e-7, rtol=1e-6), "Saved X differs from causal minute values")
                 require(np.allclose(actual_y, expected_y, atol=2e-7, rtol=1e-6, equal_nan=True), "Saved Y differs from observed values")
+            for prefix, threshold in (
+                    ("", config["evaluation"]["threshold_depth_m"]),
+                    ("warning_", config["evaluation"]["warning_threshold_depth_m"])):
+                expected = threshold_labels(source_windows, threshold)
+                require(np.array_equal(
+                    meta[f"{prefix}observed_high_depth_window"].to_numpy(dtype=bool),
+                    expected["observed_high_depth_window"]),
+                    f"{split} {prefix}high-depth metadata mismatch")
+                require(np.array_equal(
+                    meta[f"{prefix}threshold_evaluable_all_future_observed"].to_numpy(dtype=bool),
+                    expected["threshold_evaluable_all_future_observed"]),
+                    f"{split} {prefix}threshold evaluability metadata mismatch")
+                require(np.array_equal(
+                    meta[f"{prefix}external_depth_threshold_state"].to_numpy(dtype=str),
+                    expected["external_depth_threshold_state"]),
+                    f"{split} {prefix}threshold state metadata mismatch")
+                require(np.allclose(
+                    meta[f"{prefix}external_depth_threshold_first_bin_minutes"].to_numpy(dtype=float),
+                    expected["external_depth_threshold_first_bin_minutes"], equal_nan=True),
+                    f"{split} {prefix}threshold crossing-time metadata mismatch")
             if split == "train":
                 for event_id in np.unique(ids):
                     require(np.isclose(data["sample_weight"][ids == event_id].sum(), 1), "Unequal total training weight per event")
             else:
                 require((data["sample_weight"] == 1).all(), "Evaluation weights must preserve original distribution")
-        checks.append(f"{split}: shapes, masks, timestamps, source values and weights verified")
-    require(all(not event_sets[i] & event_sets[j] for i in range(3) for j in range(i + 1, 3)), "Shared events between splits")
+        checks.append(
+            f"{split}: shapes, masks, timestamps, source values, weights and risk metadata verified"
+        )
+    require(all(not event_sets[i] & event_sets[j] for i in range(len(event_sets))
+                for j in range(i + 1, len(event_sets))), "Shared events between splits")
     require(total_samples == len(samples), "Unexpected metadata rows")
     require(np.array_equal(reconstructed_scaler_rows, bins.used_for_scaler.to_numpy()), "Scaler fit membership differs from unique training inputs")
     fitted = bins.observed_depth_m.to_numpy()[reconstructed_scaler_rows]
     require(len(fitted) == scaler["unique_observed_bin_count"], "Scaler observation count mismatch")
     require(np.isclose(fitted.mean(), scaler["mean_m"], rtol=0, atol=1e-12), "Scaler mean mismatch")
     require(np.isclose(fitted.std(), scaler["std_m"], rtol=0, atol=1e-12), "Scaler standard deviation mismatch")
-    for previous, following in zip(SPLITS[:-1], SPLITS[1:]):
-        left = [pd.Timestamp(e["effective_end_utc"]) for e in manifest["events"] if e["split"] == previous]
-        right = [pd.Timestamp(e["start_utc"]) for e in manifest["events"] if e["split"] == following]
+    for previous, following in zip(TEMPORAL_SPLITS[:-1], TEMPORAL_SPLITS[1:]):
+        left = [pd.Timestamp(e["effective_end_utc"]) for e in manifest["events"]
+                if e["temporal_split"] == previous and e["split"] != "test_risk"]
+        right = [pd.Timestamp(e["start_utc"]) for e in manifest["events"]
+                 if e["temporal_split"] == following]
         require(max(left) < min(right), "Overlapping split date ranges")
+    selected_dates = set(manifest["risk_test"]["selected_dates_utc"])
+    for event in manifest["events"]:
+        event_date = utc_string(pd.Timestamp(event["start_utc"]).normalize())
+        if event["split"] == "test_risk":
+            require(event["temporal_split"] == "train", "Risk test event was not drawn from temporal train")
+            require(event_date in selected_dates, "Risk test event date is not declared")
+        if event["temporal_split"] == "train" and event_date in selected_dates:
+            require(event["split"] == "test_risk", "Selected risk date leaked into training")
     checks.extend(["unique observed training bins independently reconciled with scaler",
-                   "all split events disjoint and chronological", "all saved samples reconciled with minute tables"])
+                   "all split events are disjoint; temporal train/validation/test remain chronological",
+                   "risk-test UTC dates are wholly excluded from training",
+                   "all saved samples reconciled with minute tables"])
     data_manifest = directory / "data_manifest.json"
     if data_manifest.exists():
         artifacts = json.loads(data_manifest.read_text())["artifacts"]
@@ -212,7 +360,7 @@ def run_pipeline(source, config_path, output, report):
     validate_config(config)
     source_hash = sha256(source)
     events, audit, raw_info = read_events(source, config)
-    manifest = assign_splits(events, config)
+    manifest = assign_risk_holdout(events, config, assign_splits(events, config))
     split_by_record = {e.source_record: e for e in events}
     audit["split"] = [split_by_record[r].split if r in split_by_record else "excluded" for r in audit.source_record]
     audit["split_exclusion_reason"] = [split_by_record[r].split_reason if r in split_by_record else "invalid_or_duplicate_record" for r in audit.source_record]
@@ -301,6 +449,8 @@ def run_pipeline(source, config_path, output, report):
                 "observed_targets_by_horizon": windows["Y_mask"].sum(axis=(0, 2)).tolist(),
                 "threshold_state_counts": {str(k): int(v) for k, v in metadata.external_depth_threshold_state.value_counts().items()},
                 "unique_events_reaching_threshold_from_below": int(metadata.loc[metadata.external_depth_threshold_state == "reached", "event_index"].nunique()),
+                "warning_threshold_state_counts": {str(k): int(v) for k, v in metadata.warning_external_depth_threshold_state.value_counts().items()},
+                "unique_events_reaching_warning_from_below": int(metadata.loc[metadata.warning_external_depth_threshold_state == "reached", "event_index"].nunique()),
             }
         write_csv(stage / "samples.csv.gz", pd.concat(all_metadata, ignore_index=True))
         verification = verify_outputs(stage)
@@ -323,22 +473,21 @@ def run_pipeline(source, config_path, output, report):
                     "summary_peak_mismatch_events": int(audit["flags"].str.contains("summary_peak_mismatch").sum()),
                     "high_depth_events_before_quarantine": sum(e.depth_m.max() >= config["evaluation"]["threshold_depth_m"] for e in events)},
             "exclusion_counts": {str(k): int(v) for k, v in audit.loc[audit.split == "excluded", "split_exclusion_reason"].value_counts().items()},
-            "cut_dates_utc": manifest["cut_dates_utc"], "scaler": scaler,
+            "cut_dates_utc": manifest["cut_dates_utc"], "risk_test": manifest["risk_test"], "scaler": scaler,
             "splits": split_summary, "verification": verification,
             "limits": [
                 "Event exports omit continuous dry periods and pre-event history; no zero-padding was added.",
                 f"Summary peak differences above {config['quality']['summary_peak_quarantine_difference_m']} m are conservatively quarantined pending review.",
                 f"Same-date grouping and {config['split']['embargo_after_cut_hours']}-hour embargo do not establish storm independence.",
                 "Targets are the last observed depth in each future minute bin; missing labels remain NaN.",
-                f"External depth threshold {config['evaluation']['threshold_depth_m']:.2f} m is a project screening assumption, not a label for door opening or evacuation.",
+                f"External warning/critical thresholds ({config['evaluation']['warning_threshold_depth_m']:.2f}/{config['evaluation']['threshold_depth_m']:.2f} m) are project screening assumptions, not labels for door opening or evacuation.",
                 "Observation timestamps are assumed available without network latency; received timestamps are absent.",
                 "Source event selection and retrospective quality filtering can bias continuous-stream performance.",
             ],
         }
-        if split_summary["test"]["unique_events_reaching_threshold_from_below"] == 0:
+        if split_summary["test_risk"]["unique_events_reaching_threshold_from_below"] < config["split"]["risk_test"]["minimum_crossing_events"]:
             summary["limits"].append(
-                "Test split has zero evaluable from-below threshold crossings with fully observed future labels; "
-                "threshold-onset recall and arrival-time error cannot be estimated on this split."
+                "Risk test does not meet its configured minimum evaluable from-below crossing count."
             )
         # All counters must be built-in scalars for strict JSON serialization.
         summary = json.loads(json.dumps(summary, default=lambda x: x.item() if isinstance(x, np.generic) else str(x), allow_nan=False))
@@ -356,10 +505,34 @@ def run_pipeline(source, config_path, output, report):
                 "event_index": "int32 (N,), maps to split_manifest.json",
                 "segment_index": "int32 (N,), maps to segment_audit.csv",
                 "input_start_bin_index": "int64 (N,), zero-based within segment minute table",
-                "sample_weight": "float64 (N,), train=1/event sample count; validation/test=1",
+                "sample_weight": "float64 (N,), train=1/event sample count; all evaluation splits=1",
             },
             "sampling_weight_usage": "Use training weights as sampling probabilities OR loss weights, not both. Evaluation remains unweighted.",
             "time_semantics": "Bin (T-60s,T] includes right endpoint only. Keep event-start grid across gaps. Omit partial bins outside segment spans.",
+            "evaluation_protocol": {
+                "test_temporal": "Most recent chronological holdout for future-period generalization.",
+                "test_risk": "Pre-training fixed, whole-date holdout enriched for evaluable from-below critical-threshold crossings.",
+                "warning_threshold_m": config["evaluation"]["warning_threshold_depth_m"],
+                "critical_threshold_m": config["evaluation"]["threshold_depth_m"],
+                "model_selection": "Use validation only; never select settings using either test split.",
+            },
+            "risk_metadata_schema": {
+                "warning": {
+                    "threshold_m": config["evaluation"]["warning_threshold_depth_m"],
+                    "observed_high_depth_column": "warning_observed_high_depth_window",
+                    "state_column": "warning_external_depth_threshold_state",
+                    "first_crossing_minutes_column": "warning_external_depth_threshold_first_bin_minutes",
+                    "evaluable_column": "warning_threshold_evaluable_all_future_observed",
+                },
+                "critical": {
+                    "threshold_m": config["evaluation"]["threshold_depth_m"],
+                    "observed_high_depth_column": "observed_high_depth_window",
+                    "state_column": "external_depth_threshold_state",
+                    "first_crossing_minutes_column": "external_depth_threshold_first_bin_minutes",
+                    "evaluable_column": "threshold_evaluable_all_future_observed",
+                },
+                "states": ["not_reached", "reached", "already_above", "unavailable"],
+            },
         })
         report.parent.mkdir(parents=True, exist_ok=True)
         stage.rename(output)
@@ -385,6 +558,7 @@ def main():
     summary = run_pipeline(args.source, args.config, args.output, args.report)
     print(json.dumps({"output": str(args.output), "report": str(args.report),
                       "cut_dates_utc": summary["cut_dates_utc"],
+                      "risk_test_dates_utc": summary["risk_test"]["selected_dates_utc"],
                       "samples": {split: summary["splits"][split]["accepted_windows"] for split in SPLITS},
                       "exclusions": summary["exclusion_counts"],
                       "verified": summary["verification"]["passed"]}, ensure_ascii=False, indent=2))

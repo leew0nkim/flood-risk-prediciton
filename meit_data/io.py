@@ -33,6 +33,7 @@ class Event:
     quarantine: list[str] = field(default_factory=list)
     split: str = "excluded"
     split_reason: str = ""
+    temporal_split: str = "excluded"
     event_index: int = -1
 
     @property
@@ -206,7 +207,8 @@ def assign_splits(events: list[Event], config: dict):
         elif any(cut <= event.start < cut + embargo for cut in cuts):
             event.split_reason = "embargo"
         else:
-            event.split = "train" if event.start < cuts[0] else "validation" if event.start < cuts[1] else "test"
+            event.split = "train" if event.start < cuts[0] else "validation" if event.start < cuts[1] else "test_temporal"
+        event.temporal_split = event.split
     return {
         "method": config["split"]["method"], "target_ratios": ratios,
         "cut_dates_utc": [utc_string(cut) for cut in cuts],
@@ -217,6 +219,7 @@ def assign_splits(events: list[Event], config: dict):
             "event_index": e.event_index, "event_id": e.event_id, "sensor_id": e.sensor_id,
             "source_record": e.source_record, "start_utc": utc_string(e.start),
             "effective_end_utc": utc_string(e.effective_end), "split": e.split,
+            "temporal_split": e.temporal_split,
             "exclusion_reason": e.split_reason, "quarantine_reasons": e.quarantine,
         } for e in events],
     }
