@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_model.fold_scaling import checkpoint_data, data_fingerprint
+
 from meit_data.torch_data import depth_to_m
 
 from meit_model.baselines import linear_forecast
@@ -585,7 +587,7 @@ def main():
         "--model-dir",
         type=Path,
         default=Path(
-            "artifacts/lstm_cv"
+            "artifacts/lstm_cv_fold_scaled"
         ),
     )
 
@@ -593,7 +595,7 @@ def main():
         "--output",
         type=Path,
         default=Path(
-            "artifacts/risk_calibration/"
+            "artifacts/risk_calibration_fold_scaled/"
             "warning_threshold_sweep.json"
         ),
     )
@@ -627,6 +629,7 @@ def main():
         args.data_dir
     )
 
+    fingerprint = data_fingerprint(args.data_dir)
     scaler = load_scaler(
         args.data_dir
     )
@@ -663,18 +666,22 @@ def main():
                 fold["val_indices"]
             )
 
-        model, _ = load_checkpoint_model(
+        model, checkpoint = load_checkpoint_model(
             checkpoint_path,
             device,
+        )
+
+        fold_data, fold_scaler = checkpoint_data(
+            data, scaler, checkpoint, fingerprint, val_indices
         )
 
         fold_predictions[
             fold_number
         ] = collect_predictions(
             model=model,
-            data=data,
+            data=fold_data,
             indices=val_indices,
-            scaler=scaler,
+            scaler=fold_scaler,
             device=device,
             batch_size=args.batch_size,
         )

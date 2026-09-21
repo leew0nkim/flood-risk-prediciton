@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_model.fold_scaling import FoldScalerSource, rescale_data, indices_digest
+
 from meit_model.cv import (
     load_development_data,
     load_scaler,
@@ -100,7 +102,12 @@ def train_fold(
     output_dir,
     device,
     config,
+    provenance,
 ):
+
+    set_seed(config["seed"])
+    if (output_dir / f"fold_{fold_number}" / "best_model.pt").exists():
+        raise FileExistsError("Checkpoint already exists; choose a new --output-dir")
 
     print(
         "\n"
@@ -263,6 +270,9 @@ def train_fold(
 
             torch.save(
                 {
+                    "normalization_version": 2,
+                    "scaler": scaler,
+                    **provenance,
                     "fold":
                         fold_number,
 
@@ -282,7 +292,7 @@ def train_fold(
                         config,
 
                     "loss":
-                        "risk_aware_asymmetric_mae",
+                        "risk_aware_asymmetric_mae_valid_mean_v2",
                 },
 
                 fold_dir
@@ -373,7 +383,7 @@ def main():
         "--output-dir",
         type=Path,
         default=Path(
-            "artifacts/risk_lstm_cv"
+            "artifacts/risk_lstm_cv_fold_scaled"
         ),
     )
 
@@ -383,7 +393,11 @@ def main():
         default=None,
     )
 
+    parser.add_argument("--max-epochs", type=int, default=50)
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
+    if args.max_epochs < 1 or args.fold not in (None, 1, 2, 3, 4):
+        parser.error("max-epochs must be positive; fold must be 1..4")
 
     config = {
         "input_size":
@@ -424,9 +438,10 @@ def main():
             2.0,
     }
 
-    set_seed(
-        config["seed"]
-    )
+    config["max_epochs"] = args.max_epochs
+    config["seed"] = args.seed
+    config["normalization_version"] = 2
+    set_seed(config["seed"])
 
     device = torch.device(
         "cuda"
@@ -461,6 +476,8 @@ def main():
     scaler = load_scaler(
         args.data_dir
     )
+
+    scaling_source = FoldScalerSource(args.data_dir)
 
     args.output_dir.mkdir(
         parents=True,
@@ -515,15 +532,24 @@ def main():
                 ]
             )
 
+        fold_scaler = scaling_source.fit(train_indices)
+        fold_data = rescale_data(data, scaler, fold_scaler)
+        provenance = {
+            "data_fingerprint": scaling_source.fingerprint,
+            "train_indices_sha256": indices_digest(train_indices),
+            "val_indices_sha256": indices_digest(val_indices),
+        }
+
         result = train_fold(
             fold_number=fold_number,
             train_indices=train_indices,
             val_indices=val_indices,
-            data=data,
-            scaler=scaler,
+            data=fold_data,
+            scaler=fold_scaler,
             output_dir=args.output_dir,
             device=device,
             config=config,
+            provenance=provenance,
         )
 
         results.append(

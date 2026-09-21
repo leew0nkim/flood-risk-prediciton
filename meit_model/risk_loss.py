@@ -1,3 +1,5 @@
+import math
+
 import torch
 
 
@@ -20,6 +22,9 @@ def risk_aware_masked_mae(
     observed:
         bool mask
     """
+
+    if not math.isfinite(underprediction_weight) or underprediction_weight < 1:
+        raise ValueError("underprediction_weight must be finite and >= 1")
 
     if prediction.shape != target.shape:
         raise ValueError(
@@ -107,8 +112,9 @@ def risk_aware_masked_mae(
         weights,
     )
 
-    # weighted mean
+    # Average over valid labels; prediction-dependent weights must not
+    # cancel their own penalty through the denominator.
     return (
         absolute_error
         * weights
-    ).sum() / weights.sum()
+    ).mean()

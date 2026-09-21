@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_model.fold_scaling import checkpoint_data, data_fingerprint
+
 from meit_data.torch_data import (
     depth_to_m,
     horizon_errors,
@@ -1087,7 +1089,7 @@ def main():
         "--model-dir",
         type=Path,
         default=Path(
-            "artifacts/lstm_cv"
+            "artifacts/lstm_cv_fold_scaled"
         ),
     )
 
@@ -1095,7 +1097,7 @@ def main():
         "--output",
         type=Path,
         default=Path(
-            "artifacts/lstm_cv/"
+            "artifacts/lstm_cv_fold_scaled/"
             "evaluation.json"
         ),
     )
@@ -1137,6 +1139,7 @@ def main():
         args.data_dir
     )
 
+    fingerprint = data_fingerprint(args.data_dir)
     scaler = load_scaler(
         args.data_dir
     )
@@ -1185,11 +1188,15 @@ def main():
             )
         )
 
+        fold_data, fold_scaler = checkpoint_data(
+            data, scaler, checkpoint, fingerprint, val_indices
+        )
+
         result = evaluate_fold(
             model=model,
-            data=data,
+            data=fold_data,
             indices=val_indices,
-            scaler=scaler,
+            scaler=fold_scaler,
             device=device,
             critical_depth_m=(
                 args.critical_depth
