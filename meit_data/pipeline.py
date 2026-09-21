@@ -519,12 +519,14 @@ def run_pipeline(source, config_path, output, report):
             "risk_metadata_schema": {
                 "warning": {
                     "threshold_m": config["evaluation"]["warning_threshold_depth_m"],
+                    "observed_high_depth_column": "warning_observed_high_depth_window",
                     "state_column": "warning_external_depth_threshold_state",
                     "first_crossing_minutes_column": "warning_external_depth_threshold_first_bin_minutes",
                     "evaluable_column": "warning_threshold_evaluable_all_future_observed",
                 },
                 "critical": {
                     "threshold_m": config["evaluation"]["threshold_depth_m"],
+                    "observed_high_depth_column": "observed_high_depth_window",
                     "state_column": "external_depth_threshold_state",
                     "first_crossing_minutes_column": "external_depth_threshold_first_bin_minutes",
                     "evaluable_column": "threshold_evaluable_all_future_observed",

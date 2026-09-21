@@ -69,6 +69,14 @@ class PipelineIntegrationTests(unittest.TestCase):
             self.assertEqual(data_manifest["evaluation_protocol"]["critical_threshold_m"], .3)
             self.assertEqual(data_manifest["risk_metadata_schema"]["warning"]["threshold_m"], .25)
             self.assertEqual(data_manifest["risk_metadata_schema"]["critical"]["threshold_m"], .3)
+            self.assertEqual(
+                data_manifest["risk_metadata_schema"]["warning"]["observed_high_depth_column"],
+                "warning_observed_high_depth_window",
+            )
+            self.assertEqual(
+                data_manifest["risk_metadata_schema"]["critical"]["observed_high_depth_column"],
+                "observed_high_depth_window",
+            )
             with self.assertRaises(FileExistsError):
                 run_pipeline(source, settings, root / "first", root / "other.json")
 
