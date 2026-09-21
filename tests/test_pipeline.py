@@ -35,7 +35,7 @@ class PipelineIntegrationTests(unittest.TestCase):
         settings = root / "config.json"
         settings_config = config()
         settings_config["split"]["risk_test"]["selected_dates_utc"] = [
-            f"2024-01-{day:02}T00:00:00Z" for day in (2, 5, 8, 11)
+            f"2024-01-{day:02}T00:00:00Z" for day in (5, 8, 17, 20)
         ]
         settings.write_text(json.dumps(settings_config))
         return source, settings
@@ -52,8 +52,11 @@ class PipelineIntegrationTests(unittest.TestCase):
             self.assertEqual(original_hash, sha256(source))
             self.assertTrue(verify_outputs(root / "first")["passed"])
             self.assertGreaterEqual(first["splits"]["test_risk"]["unique_events_reaching_threshold_from_below"], 4)
-            self.assertGreaterEqual(first["splits"]["test_risk"]["unique_events_reaching_warning_from_below"], 4)
+            warning_states = first["splits"]["test_risk"]["warning_threshold_state_counts"]
+            self.assertGreater(warning_states.get("reached", 0) + warning_states.get("already_above", 0), 0)
             self.assertEqual(len(first["risk_test"]["selected_dates_utc"]), 4)
+            self.assertEqual(first["risk_test"]["critical_threshold_m"], .3)
+            self.assertEqual(first["risk_test"]["selection_procedure"]["chronological_strata"], 4)
             for split in SPLITS:
                 with np.load(root / "first" / f"{split}.npz") as a, np.load(root / "second" / f"{split}.npz") as b:
                     for key in a.files:
@@ -61,6 +64,11 @@ class PipelineIntegrationTests(unittest.TestCase):
                     self.assertGreater(len(a["X"]), 0)
                     self.assertEqual(a["Y"].shape[1:], (15, 1))
             self.assertTrue((root / "first" / "data_manifest.json").is_file())
+            data_manifest = json.loads((root / "first" / "data_manifest.json").read_text())
+            self.assertEqual(data_manifest["evaluation_protocol"]["warning_threshold_m"], .25)
+            self.assertEqual(data_manifest["evaluation_protocol"]["critical_threshold_m"], .3)
+            self.assertEqual(data_manifest["risk_metadata_schema"]["warning"]["threshold_m"], .25)
+            self.assertEqual(data_manifest["risk_metadata_schema"]["critical"]["threshold_m"], .3)
             with self.assertRaises(FileExistsError):
                 run_pipeline(source, settings, root / "first", root / "other.json")
 
@@ -75,6 +83,18 @@ class PipelineIntegrationTests(unittest.TestCase):
             arrays["Y"][0, 0, 0] += 100
             np.savez_compressed(path, **arrays)
             with self.assertRaisesRegex(AssertionError, "Saved Y differs"):
+                verify_outputs(root / "output")
+
+    def test_saved_risk_metadata_tampering_is_detected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, settings = self.fixture(root)
+            run_pipeline(source, settings, root / "output", root / "report.json")
+            path = root / "output" / "samples.csv.gz"
+            samples = pd.read_csv(path)
+            samples.loc[0, "external_depth_threshold_state"] = "reached"
+            samples.to_csv(path, index=False, compression={"method": "gzip", "mtime": 0})
+            with self.assertRaisesRegex(AssertionError, "threshold state metadata mismatch"):
                 verify_outputs(root / "output")
 
     def test_heldout_depth_changes_do_not_change_training_or_scaler(self):

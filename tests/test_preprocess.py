@@ -128,6 +128,12 @@ class CausalPreprocessingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_config(self.config)
 
+    def test_config_rejects_warning_at_or_above_critical(self):
+        self.config["evaluation"]["warning_threshold_depth_m"] = .3
+        self.config["evaluation"]["threshold_depth_m"] = .3
+        with self.assertRaisesRegex(ValueError, "Warning threshold"):
+            validate_config(self.config)
+
 
 if __name__ == "__main__":
     unittest.main()

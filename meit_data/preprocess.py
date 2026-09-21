@@ -58,7 +58,7 @@ def validate_config(config):
     expected_risk = {
         "source_temporal_split": "train",
         "group_by": "utc_event_start_date",
-        "selection": "explicit_pretraining_dates_from_sha256_seeded_crossing_date_order",
+        "selection": "explicit_pretraining_dates_from_chronology_stratified_sha256_crossing_date_order",
     }
     for key, expected in expected_risk.items():
         if risk.get(key) != expected:

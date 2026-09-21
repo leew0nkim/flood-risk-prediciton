@@ -215,7 +215,7 @@ def run_check(source, directory, report):
             "model_output": "(B,15,1), LSTM(1,64,1,batch_first=True) + Linear(64,15).",
             "training": "Training-only event-balanced weighted sampler with replacement; masked MAE, Adam, gradient clipping.",
             "normalization": "X and observed Y are already standardized; loader never fits or applies another scaler.",
-            "thresholds": "Evaluate 0.30 m warning and 0.40 m critical onset from the same continuous 1..15 minute forecasts.",
+            "thresholds": "Evaluate 0.25 m warning and 0.30 m critical onset from the same continuous 1..15 minute forecasts.",
             "streaming": "Past-only input builder on fixed grid, with receive-time filtering and explicit WARMUP/INSUFFICIENT_DATA states.",
             "finetuning": "Original scaler can be reused; actual small-scale run-ID datasets have not been supplied.",
         },
@@ -228,7 +228,7 @@ def run_check(source, directory, report):
             {"item": "Forecast performance and model selection", "status": "not_yet_evaluated",
              "detail": "Run persistence, recent-five-minute linear baseline, and full LSTM training using identical origins/masks; select on validation only. Eight optimizer steps validate integration, not accuracy."},
             {"item": "Threshold-onset evaluation", "status": "risk_test_added",
-             "detail": "Use test_risk for 0.30 m warning and 0.40 m critical onset, and test_temporal for future-period generalization. Never tune on either test split; report the independent event and UTC-date counts with metrics."},
+             "detail": "Use test_risk for 0.25 m warning and 0.30 m critical onset, and test_temporal for future-period generalization. Never tune on either test split; report the independent event and UTC-date counts with metrics."},
             {"item": "Unseen sensors and phase imbalance", "status": "requires_grouped_evaluation",
              "detail": "Report event-macro, sensor, seen/unseen-sensor and rising/falling/stable errors; equal-event sampling does not ensure equal-sensor or equal-phase sampling."},
             {"item": "Twelve quarantined events", "status": "requires_source_review",
@@ -237,7 +237,7 @@ def run_check(source, directory, report):
              "required_fields": ["run_id", "measurement_time_utc", "received_time_utc", "external_depth_m", "internal_depth_m", "observation_status", "calibration_version", "pump_state", "valve_state", "control_change_time", "scenario", "preassigned_split"],
              "detail": "Collect at least 45 actual minutes per usable sequence, preferably 60–90; use separate run IDs and retain the FloodNet scaler initially. No synthetic dry history, time stretching or copied runs."},
             {"item": "Door-opening/evacuation interpretation", "status": "outside_external_depth_labels",
-             "detail": "Needs indoor measurements and independently verified physical assumptions; external 0.30/0.40 m crossings alone are not door-opening or evacuation ground truth."},
+             "detail": "Needs independently verified physical assumptions; external 0.25/0.30 m crossings alone are not direct door-opening or evacuation ground truth."},
         ],
     }
     report.parent.mkdir(parents=True, exist_ok=True)
