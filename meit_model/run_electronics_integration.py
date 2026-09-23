@@ -14,7 +14,7 @@ from meit_model.risk import RiskEngine
 
 # 실제 전자팀 환경에 맞춰 수정
 PORT = "COM3"
-BAUDRATE = 115200
+BAUDRATE = 9600
 
 
 CHECKPOINT = (
