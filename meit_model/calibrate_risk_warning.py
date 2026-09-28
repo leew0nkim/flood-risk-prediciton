@@ -587,7 +587,7 @@ def main():
         "--model-dir",
         type=Path,
         default=Path(
-            "artifacts/lstm_cv_fold_scaled"
+            "artifacts/risk_lstm_cv_v2"
         ),
     )
 
@@ -595,7 +595,7 @@ def main():
         "--output",
         type=Path,
         default=Path(
-            "artifacts/risk_calibration_fold_scaled/"
+            "artifacts/risk_calibration/"
             "warning_threshold_sweep.json"
         ),
     )

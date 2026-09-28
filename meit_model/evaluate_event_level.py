@@ -131,10 +131,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-dir', type=Path, default=Path('data/processed'))
     parser.add_argument('--cv-dir', type=Path, default=Path('artifacts/cv'))
-    parser.add_argument('--model-dir', type=Path)
+    parser.add_argument('--model-dir', type=Path,
+                        help='Checkpoint root (default: artifacts/risk_lstm_cv_v2)')
     parser.add_argument('--input-results', type=Path, help='Reaggregate a saved event JSON without inference')
-    parser.add_argument('--required-lead-time-min', type=float, default=None)
-    parser.add_argument('--output', type=Path)
+    parser.add_argument('--required-lead-time-min', type=float, default=5,
+                        help='Minimum operational warning lead in minutes (default: 5)')
+    parser.add_argument('--output', type=Path,
+                        help='Result JSON (default: <model-dir>/event_evaluation.json)')
     parser.add_argument('--folds', type=int, nargs='+', default=[1, 2, 3, 4])
     parser.add_argument('--warning-thresholds', type=float, nargs='+', default=[.295, .290, .285])
     parser.add_argument('--batch-size', type=int, default=128)
@@ -154,7 +157,7 @@ def main():
         print('Saved:', args.output)
         return
     if args.model_dir is None:
-        parser.error('Specify --model-dir or --input-results')
+        args.model_dir = Path('artifacts/risk_lstm_cv_v2')
     if args.batch_size < 1 or len(set(args.folds)) != len(args.folds):
         parser.error('Use a positive batch size and distinct folds')
     if any(not np.isfinite(t) or t <= 0 for t in args.warning_thresholds):
@@ -191,7 +194,7 @@ def main():
             for event in events:
                 event['fold'] = number
             pooled[threshold].extend(events)
-            summary = summarize_events(events)
+            summary = summarize_events(events, args.required_lead_time_min)
             comparisons.append({'warning_threshold_m': threshold, 'summary': summary, 'events': events})
             print(f'Fold {number}, threshold {threshold:.3f}: {summary}')
         folds.append({'fold': number, 'validation_event_count': len(event_set),
@@ -205,12 +208,13 @@ def main():
                         'Non-crossing and unobservable events excluded; no event-level false alarm rate.',
                         'Zero-minute lead counts as detected, not positive advance warning.'],
         'folds': folds,
-        'pooled': [{'warning_threshold_m': t, 'summary': summarize_events(rows)}
+        'pooled': [{'warning_threshold_m': t, 'summary': summarize_events(rows, args.required_lead_time_min)}
                    for t, rows in pooled.items()],
     }
     payload = reaggregate_report(payload, args.required_lead_time_min)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False), encoding='utf-8')
+    print(json.dumps(payload['pooled'], indent=2))
     print('Saved:', output)
 
 

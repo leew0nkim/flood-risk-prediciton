@@ -49,7 +49,7 @@ class RiskResult:
 
     @property
     def t_external_warning_min(self) -> Optional[int]:
-        """External .29 m diagnostic; legacy t_warning_min is not an LED rule."""
+        """External .295 m diagnostic; legacy t_warning_min is not an LED rule."""
         return self.t_warning_min
 
     @property
@@ -76,7 +76,7 @@ class RiskEngine:
 
     def __init__(self, *, warning_current_depth_m: float = .25,
                  external_critical_depth_m: float = .30,
-                 forecast_warning_depth_m: float = .29,
+                 forecast_warning_depth_m: float = .295,
                  danger_horizon_min: int = 5,
                  internal_warning_depth_m: float = .25,
                  internal_critical_depth_m: float = .30,
