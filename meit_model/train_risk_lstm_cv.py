@@ -425,7 +425,7 @@ def main():
             1.0,
 
         "seed":
-            42,
+            args.seed,
 
         # ========================================
         # Risk-aware 설정
@@ -439,7 +439,6 @@ def main():
     }
 
     config["max_epochs"] = args.max_epochs
-    config["seed"] = args.seed
     config["normalization_version"] = 2
     set_seed(config["seed"])
 
