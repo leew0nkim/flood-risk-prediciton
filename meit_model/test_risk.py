@@ -26,6 +26,7 @@ forecast = make_forecast(
 )
 
 result = engine.evaluate(
+    internal_depth_m=0.0,  # Explicit dry-indoor fixture for these synthetic examples.
     current_depth_m=0.20,
     forecast=forecast,
 )
@@ -42,6 +43,7 @@ forecast = make_forecast(
 )
 
 result = engine.evaluate(
+    internal_depth_m=0.0,  # Explicit dry-indoor fixture for these synthetic examples.
     current_depth_m=0.26,
     forecast=forecast,
 )
@@ -57,6 +59,7 @@ print(result)
 values = [0.27] * 9 + [0.291] * 6
 
 result = engine.evaluate(
+    internal_depth_m=0.0,  # Explicit dry-indoor fixture for these synthetic examples.
     current_depth_m=0.22,
     forecast=make_forecast(values),
 )
@@ -77,6 +80,7 @@ values = [
 ] + [0.295] * 11
 
 result = engine.evaluate(
+    internal_depth_m=0.0,  # Explicit dry-indoor fixture for these synthetic examples.
     current_depth_m=0.22,
     forecast=make_forecast(values),
 )
@@ -98,6 +102,7 @@ forecast = make_forecast(
 )
 
 result = engine.evaluate(
+    internal_depth_m=0.0,  # Explicit dry-indoor fixture for these synthetic examples.
     current_depth_m=0.305,
     forecast=forecast,
 )
@@ -118,6 +123,7 @@ forecast = ForecastResult(
 )
 
 result = engine.evaluate(
+    internal_depth_m=0.0,  # Explicit dry-indoor fixture for these synthetic examples.
     current_depth_m=0.20,
     forecast=forecast,
 )

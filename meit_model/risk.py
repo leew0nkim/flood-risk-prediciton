@@ -1,336 +1,193 @@
-"""External-depth early warning for LED/voice only.
+"""Flood warnings and a provisional hydrostatic pressure indicator.
 
-DANGER means a red early warning, not physical inability to open a door.
-This module issues no OPEN/CLOSE command. A separate controller must evaluate
-indoor/outdoor depths, equivalent depth and evacuation status.
+Metre depths must share the door-bottom datum. The equivalent-depth model
+assumes still water of equal density and both surfaces below the door top.
+It does not establish door operability and never issues actuator commands.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Sequence
 import math
+from numbers import Real
+from typing import Optional, Sequence
 
 from meit_model.predictor import ForecastResult
 
-
-SAFE = "SAFE"
-WARNING = "WARNING"
-DANGER = "DANGER"
+SAFE = 'SAFE'
+WARNING = 'WARNING'
+DANGER = 'DANGER'
+_SEVERITY = {SAFE: 0, WARNING: 1, DANGER: 2}
 
 
 @dataclass
 class RiskResult:
-    # LED/voice state only; never a valve actuation command.
+    # Preserve the existing positional constructor contract used by controller.
     state: str
-
-    # 현재 수위
-    current_depth_m: float
-
-    # 예측 기준
-    warning_depth_m: float
+    current_depth_m: float  # External depth, retained for compatibility.
+    warning_depth_m: float  # External forecast threshold, NOT equivalent depth.
     external_critical_depth_m: float
-
-    # calibrated warning threshold 최초 도달 예상시간
     t_warning_min: Optional[int]
-
-    # 실제 critical depth(0.30m) 최초 도달 예상시간
-    # External-depth reference only, NOT the physical door-opening T_critical.
     t_external_critical_min: Optional[int]
-
-    # predictor 상태
     forecast_status: str
-
-    # 사람이 확인하기 위한 설명
     reason: str
+    internal_depth_m: Optional[float] = None
+    external_state: str = WARNING
+    internal_state: str = WARNING
+    pressure_state: str = WARNING
+    depth_gap_m: Optional[float] = None
+    equivalent_depth_m: Optional[float] = None
+    bottom_pressure_difference_pa: Optional[float] = None
+    pressure_direction: Optional[str] = None
+    pressure_status: str = 'MISSING_INTERNAL_DEPTH'
+    pressure_warning_equivalent_depth_m: float = .30
+    pressure_critical_equivalent_depth_m: float = .40
+    pressure_forecast_status: str = 'UNAVAILABLE'
+    # Outside-higher crossing, measured from the EXTERNAL forecast origin.
+    # Scenario only: not a door-opening deadline or control input.
+    t_pressure_critical_if_internal_constant_min: Optional[int] = None
 
 
 class RiskEngine:
-    """
-    수위 예측 결과를 SAFE / WARNING / DANGER 상태로 변환한다.
+    """LED severity = max(external flood, internal flood, current pressure).
 
-    내부 단위는 모두 meter.
-
-    기본 정책
-    ----------
-    SAFE:
-        현재 수위 < 0.25m
-        AND 앞으로 15분 동안 warning threshold 도달 예측 없음
-
-    WARNING:
-        현재 수위가 0.25m 이상 0.30m 미만
-        OR warning threshold 도달까지 6~15분
-        OR 예측 불가능(WARMUP / INSUFFICIENT_DATA)
-
-    DANGER:
-        현재 수위 >= 0.30m
-        OR warning threshold 도달까지 5분 이하
+    Existing external policy (.25/.30 current, .29 forecast) remains.
+    Indoor .25/.30 and equivalent .30 warning are provisional PoC policies;
+    equivalent .40 is the proposal's assumption, not a calibrated safety limit.
+    Missing indoor input prevents SAFE. Conditional future pressure is reported
+    separately and disabled during equalization or unknown actuator state.
     """
 
-    def __init__(
-        self,
-        *,
-        warning_current_depth_m: float = 0.25,
-        external_critical_depth_m: float = 0.30,
-        forecast_warning_depth_m: float = 0.29,
-        danger_horizon_min: int = 5,
-    ):
-        if not (
-            math.isfinite(external_critical_depth_m)
-            and 0 <= warning_current_depth_m
-            < external_critical_depth_m
-        ):
-            raise ValueError(
-                "warning_current_depth_m은 "
-                "external_critical_depth_m보다 작아야 합니다."
-            )
-
-        if not (math.isfinite(forecast_warning_depth_m)
-                and 0 < forecast_warning_depth_m <= external_critical_depth_m):
-            raise ValueError(
-                "forecast_warning_depth_m은 양수여야 합니다."
-            )
-
-        if (not math.isfinite(danger_horizon_min)
+    def __init__(self, *, warning_current_depth_m: float = .25,
+                 external_critical_depth_m: float = .30,
+                 forecast_warning_depth_m: float = .29,
+                 danger_horizon_min: int = 5,
+                 internal_warning_depth_m: float = .25,
+                 internal_critical_depth_m: float = .30,
+                 pressure_warning_equivalent_depth_m: float = .30,
+                 pressure_critical_equivalent_depth_m: float = .40):
+        thresholds = {
+            'warning_current_depth_m': warning_current_depth_m,
+            'external_critical_depth_m': external_critical_depth_m,
+            'forecast_warning_depth_m': forecast_warning_depth_m,
+            'internal_warning_depth_m': internal_warning_depth_m,
+            'internal_critical_depth_m': internal_critical_depth_m,
+            'pressure_warning_equivalent_depth_m': pressure_warning_equivalent_depth_m,
+            'pressure_critical_equivalent_depth_m': pressure_critical_equivalent_depth_m,
+        }
+        for name, value in thresholds.items():
+            setattr(self, name, self._validate_current_depth(value))
+        for low, high in [(warning_current_depth_m, external_critical_depth_m),
+                          (internal_warning_depth_m, internal_critical_depth_m),
+                          (pressure_warning_equivalent_depth_m, pressure_critical_equivalent_depth_m)]:
+            if not low < high:
+                raise ValueError('Warning depth must be below critical depth')
+        if not 0 < forecast_warning_depth_m <= external_critical_depth_m:
+            raise ValueError('Invalid external forecast warning threshold')
+        if (isinstance(danger_horizon_min, bool) or not isinstance(danger_horizon_min, Real)
+                or not math.isfinite(danger_horizon_min)
                 or int(danger_horizon_min) != danger_horizon_min
                 or not 1 <= danger_horizon_min <= 15):
-            raise ValueError(
-                "danger_horizon_min은 양수여야 합니다."
-            )
-
-        self.warning_current_depth_m = (
-            float(warning_current_depth_m)
-        )
-
-        self.external_critical_depth_m = float(
-            external_critical_depth_m
-        )
-
-        self.forecast_warning_depth_m = float(
-            forecast_warning_depth_m
-        )
-
-        self.danger_horizon_min = int(
-            danger_horizon_min
-        )
+            raise ValueError('danger_horizon_min must be an integer in 1..15')
+        self.danger_horizon_min = int(danger_horizon_min)
 
     @staticmethod
-    def _validate_current_depth(
-        current_depth_m: float,
-    ) -> float:
-        value = float(current_depth_m)
-
-        if not math.isfinite(value):
-            raise ValueError(
-                "현재 수위가 NaN/inf입니다."
-            )
-
-        if value < 0:
-            raise ValueError(
-                "현재 수위가 음수입니다."
-            )
-
+    def _validate_current_depth(value: float) -> float:
+        if isinstance(value, bool) or not isinstance(value, Real):
+            raise ValueError('Depth must be a number in metres')
+        try:
+            value = float(value)
+        except OverflowError as exc:
+            raise ValueError('Depth is out of range') from exc
+        if not math.isfinite(value) or value < 0:
+            raise ValueError('Depth must be finite and nonnegative')
         return value
 
     @staticmethod
-    def _first_crossing_min(
-        predictions_m: Sequence[float],
-        threshold_m: float,
-    ) -> Optional[int]:
-        """
-        미래 +1 ~ +15분 예측 중 threshold에
-        처음 도달하는 시점을 반환한다.
+    def _first_crossing_min(predictions_m: Sequence[float], threshold_m: float) -> Optional[int]:
+        return next((i for i, value in enumerate(predictions_m, 1) if value >= threshold_m), None)
 
-        없으면 None.
-        """
+    @staticmethod
+    def _depth_state(depth, warning, critical, *, roundoff_tolerance=0.):
+        def reached(threshold):
+            return depth >= threshold or math.isclose(depth, threshold, rel_tol=roundoff_tolerance)
+        return DANGER if reached(critical) else WARNING if reached(warning) else SAFE
 
-        for minute, depth in enumerate(
-            predictions_m,
-            start=1,
-        ):
-            depth = float(depth)
+    @staticmethod
+    def _pressure_reached(depth, threshold):
+        # sqrt/subtraction can place an exact analytical boundary just below it.
+        return depth >= threshold or math.isclose(depth, threshold, rel_tol=1e-12)
 
-            if not math.isfinite(depth):
-                continue
+    @staticmethod
+    def _equivalent_depth(outside: float, inside: float) -> float:
+        # sqrt(abs(outside**2-inside**2)), without overflowing from squaring.
+        high, low = max(outside, inside), min(outside, inside)
+        ratio = 0. if high == low else ((high - low) / high) * (1 + low / high)
+        return high * math.sqrt(min(1., ratio))
 
-            if depth >= threshold_m:
-                return minute
+    def evaluate(self, current_depth_m: float, forecast: ForecastResult, *,
+                 internal_depth_m: Optional[float] = None,
+                 equalization_active: Optional[bool] = None) -> RiskResult:
+        outside = self._validate_current_depth(current_depth_m)
+        inside = None if internal_depth_m is None else self._validate_current_depth(internal_depth_m)
+        if equalization_active is not None and not isinstance(equalization_active, bool):
+            raise ValueError('equalization_active must be bool or unknown (None)')
+        status, predictions = forecast.status, None
+        if status == 'READY':
+            try:
+                if forecast.predicted_depths_m is None or len(forecast.predicted_depths_m) != 15:
+                    raise ValueError('Expected 15 future external depths')
+                predictions = [self._validate_current_depth(v) for v in forecast.predicted_depths_m]
+            except (ValueError, TypeError, OverflowError):
+                status = 'INVALID_FORECAST'
+        tw = self._first_crossing_min(predictions, self.forecast_warning_depth_m) if predictions is not None else None
+        te = self._first_crossing_min(predictions, self.external_critical_depth_m) if predictions is not None else None
+        external_state = self._depth_state(outside, self.warning_current_depth_m, self.external_critical_depth_m)
+        if outside >= self.external_critical_depth_m:
+            tw = te = 0
+        elif tw is not None and tw <= self.danger_horizon_min:
+            external_state = DANGER
+        elif predictions is None or tw is not None:
+            external_state = WARNING
 
-        return None
-
-    def evaluate(
-        self,
-        current_depth_m: float,
-        forecast: ForecastResult,
-    ) -> RiskResult:
-
-        current_depth_m = (
-            self._validate_current_depth(
-                current_depth_m
-            )
-        )
-
-        # --------------------------------------------------
-        # 1. 현재 이미 critical이면 예측과 상관없이 DANGER
-        # --------------------------------------------------
-        if current_depth_m >= self.external_critical_depth_m:
-            return RiskResult(
-                state=DANGER,
-                current_depth_m=current_depth_m,
-                warning_depth_m=(
-                    self.forecast_warning_depth_m
-                ),
-                external_critical_depth_m=self.external_critical_depth_m,
-                t_warning_min=0,
-                t_external_critical_min=0,
-                forecast_status=forecast.status,
-                reason=(
-                    "현재 수위가 critical depth "
-                    f"{self.external_critical_depth_m:.3f}m "
-                    "이상입니다."
-                ),
-            )
-
-        # --------------------------------------------------
-        # 2. 예측 불가능
-        #
-        # 예측 데이터가 부족하다고 SAFE로 판정하면 안 된다.
-        # 1차 시스템에서는 보수적으로 WARNING 처리.
-        # --------------------------------------------------
-        if (
-            forecast.status != "READY"
-            or forecast.predicted_depths_m is None
-        ):
-            return RiskResult(
-                state=WARNING,
-                current_depth_m=current_depth_m,
-                warning_depth_m=(
-                    self.forecast_warning_depth_m
-                ),
-                external_critical_depth_m=self.external_critical_depth_m,
-                t_warning_min=None,
-                t_external_critical_min=None,
-                forecast_status=forecast.status,
-                reason=(
-                    "미래 예측이 준비되지 않아 "
-                    "보수적으로 WARNING 처리합니다."
-                ),
-            )
-
-        predictions = forecast.predicted_depths_m
-        try:
-            valid_predictions = len(predictions) == 15 and all(
-                math.isfinite(float(x)) and float(x) >= 0 for x in predictions)
-        except (TypeError, ValueError, OverflowError):
-            valid_predictions = False
-        if not valid_predictions:
-            return RiskResult(
-                state=WARNING, current_depth_m=current_depth_m,
-                warning_depth_m=self.forecast_warning_depth_m,
-                external_critical_depth_m=self.external_critical_depth_m,
-                t_warning_min=None, t_external_critical_min=None,
-                forecast_status="INVALID_FORECAST",
-                reason="Invalid 15-minute forecast; warning only, no actuation.",
-            )
-
-        # --------------------------------------------------
-        # 3. 최초 warning / critical crossing 계산
-        # --------------------------------------------------
-        t_warning = self._first_crossing_min(
-            predictions,
-            self.forecast_warning_depth_m,
-        )
-
-        t_external_critical = self._first_crossing_min(
-            predictions,
-            self.external_critical_depth_m,
-        )
-
-        # --------------------------------------------------
-        # 4. 미래 위험이 5분 이내
-        # --------------------------------------------------
-        if (
-            t_warning is not None
-            and t_warning <= self.danger_horizon_min
-        ):
-            return RiskResult(
-                state=DANGER,
-                current_depth_m=current_depth_m,
-                warning_depth_m=(
-                    self.forecast_warning_depth_m
-                ),
-                external_critical_depth_m=self.external_critical_depth_m,
-                t_warning_min=t_warning,
-                t_external_critical_min=t_external_critical,
-                forecast_status=forecast.status,
-                reason=(
-                    "예측 경고 수위 "
-                    f"{self.forecast_warning_depth_m:.3f}m "
-                    f"도달까지 {t_warning}분으로 "
-                    "DANGER 기준 이내입니다."
-                ),
-            )
-
-        # --------------------------------------------------
-        # 5. 미래 위험이 6~15분 이내
-        # --------------------------------------------------
-        if t_warning is not None:
-            return RiskResult(
-                state=WARNING,
-                current_depth_m=current_depth_m,
-                warning_depth_m=(
-                    self.forecast_warning_depth_m
-                ),
-                external_critical_depth_m=self.external_critical_depth_m,
-                t_warning_min=t_warning,
-                t_external_critical_min=t_external_critical,
-                forecast_status=forecast.status,
-                reason=(
-                    "예측 경고 수위 "
-                    f"{self.forecast_warning_depth_m:.3f}m "
-                    f"도달까지 {t_warning}분 남았습니다."
-                ),
-            )
-
-        # --------------------------------------------------
-        # 6. 미래 crossing은 없지만 현재 수위가 warning 영역
-        # --------------------------------------------------
-        if (
-            current_depth_m
-            >= self.warning_current_depth_m
-        ):
-            return RiskResult(
-                state=WARNING,
-                current_depth_m=current_depth_m,
-                warning_depth_m=(
-                    self.forecast_warning_depth_m
-                ),
-                external_critical_depth_m=self.external_critical_depth_m,
-                t_warning_min=None,
-                t_external_critical_min=None,
-                forecast_status=forecast.status,
-                reason=(
-                    "15분 내 위험 도달 예측은 없지만 "
-                    "현재 수위가 WARNING 기준 "
-                    f"{self.warning_current_depth_m:.3f}m "
-                    "이상입니다."
-                ),
-            )
-
-        # --------------------------------------------------
-        # 7. 현재도 낮고 미래 위험도 없음
-        # --------------------------------------------------
-        return RiskResult(
-            state=SAFE,
-            current_depth_m=current_depth_m,
-            warning_depth_m=(
-                self.forecast_warning_depth_m
-            ),
+        result = RiskResult(
+            state=external_state, current_depth_m=outside,
+            warning_depth_m=self.forecast_warning_depth_m,
             external_critical_depth_m=self.external_critical_depth_m,
-            t_warning_min=None,
-            t_external_critical_min=None,
-            forecast_status=forecast.status,
-            reason=(
-                "현재 수위가 낮고 "
-                "15분 내 위험 도달 예측이 없습니다."
-            ),
+            t_warning_min=tw, t_external_critical_min=te, forecast_status=status,
+            reason='', internal_depth_m=inside, external_state=external_state,
+            pressure_warning_equivalent_depth_m=self.pressure_warning_equivalent_depth_m,
+            pressure_critical_equivalent_depth_m=self.pressure_critical_equivalent_depth_m,
         )
+        if inside is not None:
+            result.internal_state = self._depth_state(inside, self.internal_warning_depth_m, self.internal_critical_depth_m)
+            result.depth_gap_m = outside - inside
+            result.equivalent_depth_m = self._equivalent_depth(outside, inside)
+            result.pressure_direction = ('OUTSIDE_HIGHER' if outside > inside else
+                                         'INSIDE_HIGHER' if inside > outside else 'BALANCED')
+            # Signed gauge pressure difference at the common door-bottom datum.
+            bottom_pressure = 1000. * 9.80665 * result.depth_gap_m
+            result.bottom_pressure_difference_pa = bottom_pressure if math.isfinite(bottom_pressure) else None
+            result.pressure_status = 'ASSUMED_PARTIAL_SUBMERGENCE'
+            result.pressure_state = self._depth_state(result.equivalent_depth_m,
+                self.pressure_warning_equivalent_depth_m, self.pressure_critical_equivalent_depth_m,
+                roundoff_tolerance=1e-12)
+            if not math.isfinite(bottom_pressure):
+                result.pressure_status = 'NUMERIC_OUT_OF_RANGE'
+                result.pressure_forecast_status = 'UNAVAILABLE_NUMERIC_RANGE'
+            elif equalization_active is not False:
+                result.pressure_forecast_status = ('UNAVAILABLE_EQUALIZATION_ACTIVE' if equalization_active
+                                                   else 'UNAVAILABLE_EQUALIZATION_STATE')
+            elif predictions is not None:
+                result.pressure_forecast_status = 'CONDITIONAL_INTERNAL_CONSTANT'
+                if outside >= inside and self._pressure_reached(result.equivalent_depth_m, self.pressure_critical_equivalent_depth_m):
+                    result.t_pressure_critical_if_internal_constant_min = 0
+                else:
+                    result.t_pressure_critical_if_internal_constant_min = next((
+                        minute for minute, depth in enumerate(predictions, 1)
+                        if depth >= inside and self._pressure_reached(self._equivalent_depth(depth, inside), self.pressure_critical_equivalent_depth_m)
+                    ), None)
+        result.state = max((result.external_state, result.internal_state, result.pressure_state), key=_SEVERITY.get)
+        result.reason = (f'External flood={result.external_state}; internal flood={result.internal_state}; '
+                         f'current pressure={result.pressure_state} ({result.pressure_status}). '
+                         'Conditional pressure time is not a door-opening deadline.')
+        return result

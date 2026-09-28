@@ -18,7 +18,7 @@ class RiskEngineTests(unittest.TestCase):
         ]
         for current, values, state, warning, critical in cases:
             with self.subTest(current=current, values=values):
-                result = engine.evaluate(current, ForecastResult('READY', values, None))
+                result = engine.evaluate(current, ForecastResult('READY', values, None), internal_depth_m=0.)
                 self.assertEqual((result.state, result.t_warning_min,
                                   result.t_external_critical_min), (state, warning, critical))
                 self.assertFalse(hasattr(result, 'command'))
@@ -39,6 +39,101 @@ class RiskEngineTests(unittest.TestCase):
         for options in [{'forecast_warning_depth_m': float('nan')},
                         {'forecast_warning_depth_m': .31},
                         {'external_critical_depth_m': float('inf')},
-                        {'danger_horizon_min': 5.5}]:
+                        {'danger_horizon_min': 5.5},
+                        {'internal_warning_depth_m': .31},
+                        {'internal_critical_depth_m': float('nan')},
+                        {'pressure_warning_equivalent_depth_m': .41},
+                        {'pressure_critical_equivalent_depth_m': float('inf')}]:
             with self.assertRaises(ValueError):
                 RiskEngine(**options)
+
+    def evaluate_pair(self, outside, inside, values=None, **options):
+        return RiskEngine().evaluate(outside, ForecastResult('READY', values or [.2] * 15, None),
+            internal_depth_m=inside, **options)
+
+    def test_equal_gaps_do_not_have_equal_hydrostatic_loads(self):
+        shallow = self.evaluate_pair(.2, 0.)
+        deep = self.evaluate_pair(.5, .3)
+        self.assertAlmostEqual(shallow.depth_gap_m, deep.depth_gap_m)
+        self.assertAlmostEqual(shallow.bottom_pressure_difference_pa, 1961.33)
+        self.assertAlmostEqual(shallow.bottom_pressure_difference_pa, deep.bottom_pressure_difference_pa)
+        self.assertAlmostEqual(shallow.equivalent_depth_m, .2)
+        self.assertAlmostEqual(deep.equivalent_depth_m, .4)
+        # Integrated force per width is proportional to equivalent depth squared.
+        self.assertAlmostEqual((deep.equivalent_depth_m / shallow.equivalent_depth_m) ** 2, 4.)
+
+    def test_equalized_water_does_not_clear_flood_danger(self):
+        result = self.evaluate_pair(.5, .5, [.5] * 15)
+        self.assertEqual(result.equivalent_depth_m, 0.)
+        self.assertEqual(result.bottom_pressure_difference_pa, 0.)
+        self.assertEqual(result.pressure_direction, 'BALANCED')
+        self.assertEqual(result.pressure_state, 'SAFE')
+        self.assertEqual((result.external_state, result.internal_state, result.state), ('DANGER',) * 3)
+
+    def test_analytical_pressure_boundaries_are_inclusive(self):
+        self.assertEqual(self.evaluate_pair(.5, .4).pressure_state, 'WARNING')
+        self.assertEqual(self.evaluate_pair(.5, .3).pressure_state, 'DANGER')
+
+    def test_reverse_pressure_and_indoor_flood_are_retained(self):
+        result = self.evaluate_pair(.3, .5)
+        self.assertAlmostEqual(result.equivalent_depth_m, .4)
+        self.assertAlmostEqual(result.depth_gap_m, -.2)
+        self.assertLess(result.bottom_pressure_difference_pa, 0.)
+        self.assertEqual(result.pressure_direction, 'INSIDE_HIGHER')
+        self.assertEqual(result.state, 'DANGER')
+        result = self.evaluate_pair(.2, .31)
+        self.assertEqual(result.external_state, 'SAFE')
+        self.assertEqual(result.internal_state, 'DANGER')
+        self.assertEqual(result.state, 'DANGER')
+
+    def test_missing_indoor_is_unknown_and_never_overrides_known_danger(self):
+        for outside, state in [(.2, 'WARNING'), (.5, 'DANGER')]:
+            result = self.evaluate_pair(outside, None)
+            self.assertEqual(result.state, state)
+            self.assertEqual(result.pressure_status, 'MISSING_INTERNAL_DEPTH')
+            self.assertIsNone(result.depth_gap_m)
+            self.assertIsNone(result.equivalent_depth_m)
+            self.assertIsNone(result.t_pressure_critical_if_internal_constant_min)
+
+    def test_invalid_indoor_and_external_depths_rejected(self):
+        for bad in [-.01, float('nan'), float('inf'), True, '0.2']:
+            with self.subTest(value=bad), self.assertRaises(ValueError):
+                self.evaluate_pair(.2, bad)
+            with self.subTest(external=bad), self.assertRaises(ValueError):
+                self.evaluate_pair(bad, 0.)
+
+    def test_conditional_pressure_time_uses_internal_depth(self):
+        values = [.3] * 2 + [.5] * 13
+        low = self.evaluate_pair(.2, .3, values, equalization_active=False)
+        high = self.evaluate_pair(.2, .4, values, equalization_active=False)
+        self.assertEqual(low.pressure_forecast_status, 'CONDITIONAL_INTERNAL_CONSTANT')
+        self.assertEqual(low.t_pressure_critical_if_internal_constant_min, 3)
+        self.assertIsNone(high.t_pressure_critical_if_internal_constant_min)
+        # Original external crossing remains external, not a door-opening time.
+        self.assertEqual(low.t_external_critical_min, 1)
+        self.assertEqual(high.t_external_critical_min, 1)
+
+    def test_pressure_time_unavailable_when_equalizing_or_unknown(self):
+        for active in (True, None):
+            result = self.evaluate_pair(.2, .1, [.5] * 15, equalization_active=active)
+            self.assertTrue(result.pressure_forecast_status.startswith('UNAVAILABLE'))
+            self.assertIsNone(result.t_pressure_critical_if_internal_constant_min)
+
+    def test_large_finite_depths_never_emit_nonfinite_json(self):
+        import json
+        from dataclasses import asdict
+        result = self.evaluate_pair(1e300, 5e299)
+        self.assertAlmostEqual(result.equivalent_depth_m / 1e300, 3 ** .5 / 2)
+        json.dumps(asdict(result), allow_nan=False)
+        result = self.evaluate_pair(1e308, 0., equalization_active=False)
+        self.assertEqual(result.pressure_status, 'NUMERIC_OUT_OF_RANGE')
+        self.assertIsNone(result.bottom_pressure_difference_pa)
+        self.assertEqual(result.pressure_forecast_status, 'UNAVAILABLE_NUMERIC_RANGE')
+        self.assertIsNone(result.t_pressure_critical_if_internal_constant_min)
+        json.dumps(asdict(result), allow_nan=False)
+
+    def test_invalid_forecast_cannot_hide_known_indoor_danger(self):
+        result = self.evaluate_pair(.1, .4, [float('nan')] * 15)
+        self.assertEqual(result.forecast_status, 'INVALID_FORECAST')
+        self.assertEqual(result.state, 'DANGER')
+        self.assertIsNone(result.t_pressure_critical_if_internal_constant_min)
