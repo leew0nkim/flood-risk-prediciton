@@ -33,28 +33,45 @@ class RiskResult:
     internal_depth_m: Optional[float] = None
     external_state: str = WARNING
     internal_state: str = WARNING
-    pressure_state: str = WARNING
+    current_state: str = WARNING
+    forecast_state: str = WARNING
+    t_critical_min: Optional[int] = None
     depth_gap_m: Optional[float] = None
     equivalent_depth_m: Optional[float] = None
     bottom_pressure_difference_pa: Optional[float] = None
     pressure_direction: Optional[str] = None
     pressure_status: str = 'MISSING_INTERNAL_DEPTH'
-    pressure_warning_equivalent_depth_m: float = .30
-    pressure_critical_equivalent_depth_m: float = .40
+    pressure_critical_equivalent_depth_m: float = .30
     pressure_forecast_status: str = 'UNAVAILABLE'
     # Outside-higher crossing, measured from the EXTERNAL forecast origin.
-    # Scenario only: not a door-opening deadline or control input.
+    # Compatibility alias for t_critical_min; conditional estimate only.
     t_pressure_critical_if_internal_constant_min: Optional[int] = None
+
+    @property
+    def t_external_warning_min(self) -> Optional[int]:
+        """External .29 m diagnostic; legacy t_warning_min is not an LED rule."""
+        return self.t_warning_min
+
+    @property
+    def current_external_depth_m(self) -> float:
+        return self.current_depth_m
+
+    @property
+    def current_internal_depth_m(self) -> Optional[float]:
+        return self.internal_depth_m
+
+    @property
+    def current_equivalent_depth_m(self) -> Optional[float]:
+        return self.equivalent_depth_m
 
 
 class RiskEngine:
-    """LED severity = max(external flood, internal flood, current pressure).
+    """LED = max(current indoor/outdoor flood, conditional future pressure).
 
-    Existing external policy (.25/.30 current, .29 forecast) remains.
-    Indoor .25/.30 and equivalent .30 warning are provisional PoC policies;
-    equivalent .40 is the proposal's assumption, not a calibrated safety limit.
-    Missing indoor input prevents SAFE. Conditional future pressure is reported
-    separately and disabled during equalization or unknown actuator state.
+    T_critical uses the current indoor depth held constant and outside-higher
+    equivalent depth >= .30 m. It is a model-based estimate, not a measured
+    door-operability guarantee. Unknown/active equalization disables future
+    extrapolation, but does not erase an already reached current threshold.
     """
 
     def __init__(self, *, warning_current_depth_m: float = .25,
@@ -63,24 +80,23 @@ class RiskEngine:
                  danger_horizon_min: int = 5,
                  internal_warning_depth_m: float = .25,
                  internal_critical_depth_m: float = .30,
-                 pressure_warning_equivalent_depth_m: float = .30,
-                 pressure_critical_equivalent_depth_m: float = .40):
+                 pressure_critical_equivalent_depth_m: float = .30):
         thresholds = {
             'warning_current_depth_m': warning_current_depth_m,
             'external_critical_depth_m': external_critical_depth_m,
             'forecast_warning_depth_m': forecast_warning_depth_m,
             'internal_warning_depth_m': internal_warning_depth_m,
             'internal_critical_depth_m': internal_critical_depth_m,
-            'pressure_warning_equivalent_depth_m': pressure_warning_equivalent_depth_m,
             'pressure_critical_equivalent_depth_m': pressure_critical_equivalent_depth_m,
         }
         for name, value in thresholds.items():
             setattr(self, name, self._validate_current_depth(value))
         for low, high in [(warning_current_depth_m, external_critical_depth_m),
-                          (internal_warning_depth_m, internal_critical_depth_m),
-                          (pressure_warning_equivalent_depth_m, pressure_critical_equivalent_depth_m)]:
+                          (internal_warning_depth_m, internal_critical_depth_m)]:
             if not low < high:
                 raise ValueError('Warning depth must be below critical depth')
+        if self.pressure_critical_equivalent_depth_m <= 0:
+            raise ValueError('Equivalent critical depth must be positive')
         if not 0 < forecast_warning_depth_m <= external_critical_depth_m:
             raise ValueError('Invalid external forecast warning threshold')
         if (isinstance(danger_horizon_min, bool) or not isinstance(danger_horizon_min, Real)
@@ -142,12 +158,10 @@ class RiskEngine:
         tw = self._first_crossing_min(predictions, self.forecast_warning_depth_m) if predictions is not None else None
         te = self._first_crossing_min(predictions, self.external_critical_depth_m) if predictions is not None else None
         external_state = self._depth_state(outside, self.warning_current_depth_m, self.external_critical_depth_m)
+        if outside >= self.forecast_warning_depth_m:
+            tw = 0
         if outside >= self.external_critical_depth_m:
-            tw = te = 0
-        elif tw is not None and tw <= self.danger_horizon_min:
-            external_state = DANGER
-        elif predictions is None or tw is not None:
-            external_state = WARNING
+            te = 0
 
         result = RiskResult(
             state=external_state, current_depth_m=outside,
@@ -155,7 +169,6 @@ class RiskEngine:
             external_critical_depth_m=self.external_critical_depth_m,
             t_warning_min=tw, t_external_critical_min=te, forecast_status=status,
             reason='', internal_depth_m=inside, external_state=external_state,
-            pressure_warning_equivalent_depth_m=self.pressure_warning_equivalent_depth_m,
             pressure_critical_equivalent_depth_m=self.pressure_critical_equivalent_depth_m,
         )
         if inside is not None:
@@ -168,26 +181,38 @@ class RiskEngine:
             bottom_pressure = 1000. * 9.80665 * result.depth_gap_m
             result.bottom_pressure_difference_pa = bottom_pressure if math.isfinite(bottom_pressure) else None
             result.pressure_status = 'ASSUMED_PARTIAL_SUBMERGENCE'
-            result.pressure_state = self._depth_state(result.equivalent_depth_m,
-                self.pressure_warning_equivalent_depth_m, self.pressure_critical_equivalent_depth_m,
-                roundoff_tolerance=1e-12)
             if not math.isfinite(bottom_pressure):
                 result.pressure_status = 'NUMERIC_OUT_OF_RANGE'
                 result.pressure_forecast_status = 'UNAVAILABLE_NUMERIC_RANGE'
+            elif outside > inside and self._pressure_reached(
+                    result.equivalent_depth_m, self.pressure_critical_equivalent_depth_m):
+                # Current paired observations do not require a forecast or an
+                # assumption that indoor depth will remain constant.
+                result.pressure_forecast_status = 'CURRENT_CRITICAL_REACHED'
+                result.t_pressure_critical_if_internal_constant_min = 0
             elif equalization_active is not False:
                 result.pressure_forecast_status = ('UNAVAILABLE_EQUALIZATION_ACTIVE' if equalization_active
                                                    else 'UNAVAILABLE_EQUALIZATION_STATE')
             elif predictions is not None:
                 result.pressure_forecast_status = 'CONDITIONAL_INTERNAL_CONSTANT'
-                if outside >= inside and self._pressure_reached(result.equivalent_depth_m, self.pressure_critical_equivalent_depth_m):
-                    result.t_pressure_critical_if_internal_constant_min = 0
-                else:
-                    result.t_pressure_critical_if_internal_constant_min = next((
-                        minute for minute, depth in enumerate(predictions, 1)
-                        if depth >= inside and self._pressure_reached(self._equivalent_depth(depth, inside), self.pressure_critical_equivalent_depth_m)
-                    ), None)
-        result.state = max((result.external_state, result.internal_state, result.pressure_state), key=_SEVERITY.get)
-        result.reason = (f'External flood={result.external_state}; internal flood={result.internal_state}; '
-                         f'current pressure={result.pressure_state} ({result.pressure_status}). '
-                         'Conditional pressure time is not a door-opening deadline.')
+                result.t_pressure_critical_if_internal_constant_min = next((
+                    minute for minute, depth in enumerate(predictions, 1)
+                    if depth > inside and self._pressure_reached(self._equivalent_depth(depth, inside), self.pressure_critical_equivalent_depth_m)
+                ), None)
+        result.t_critical_min = result.t_pressure_critical_if_internal_constant_min
+        result.current_state = max((result.external_state, result.internal_state), key=_SEVERITY.get)
+        if result.t_critical_min == 0:
+            result.forecast_state = DANGER
+        elif result.pressure_forecast_status != 'CONDITIONAL_INTERNAL_CONSTANT':
+            result.forecast_state = WARNING
+        elif result.t_critical_min is None:
+            result.forecast_state = SAFE
+        elif result.t_critical_min <= self.danger_horizon_min:
+            result.forecast_state = DANGER
+        else:
+            result.forecast_state = WARNING
+        result.state = max((result.current_state, result.forecast_state), key=_SEVERITY.get)
+        result.reason = (f'Current flood={result.current_state}; future pressure={result.forecast_state}; '
+                         f'T_critical={result.t_critical_min} min ({result.pressure_forecast_status}). '
+                         'Indoor depth held constant; no actuator command or verified door deadline.')
         return result
