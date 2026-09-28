@@ -1,0 +1,477 @@
+{
+  "scope": "Validation-only descriptive baselines; not LSTM or final test performance",
+  "current_critical_m": 0.3,
+  "forecast_warning_m": 0.29,
+  "sample_count": 24857,
+  "roundoff_only_current_depths_clamped_to_zero": 364,
+  "event_count": 237,
+  "fixed_future_observation_horizon_min": 15,
+  "complete_precritical_windows": 19610,
+  "positive_windows": 86,
+  "negative_windows": 19524,
+  "source_hashes": {
+    "validation.npz": "74aa9deb10660694c1d78a6fa51847e6ea5f8b8fa42b82ae68748e69185e3695",
+    "scaler.json": "b71f7e5cc80e0110e91e0849e651d92187daadd870d3adb450c99a6cf02bc19d",
+    "split_manifest.json": "91093956efcd79e62163c269b63ab5df70b88e4857e9714709e719b4375264d6"
+  },
+  "limitations": [
+    "Only represented validation origins with READY forecasts are replayed.",
+    "First observable future crossing is not necessarily the first raw-event crossing.",
+    "Event warnings searched only in the preceding 15 minutes, as in the existing evaluator.",
+    "No dry-period stream or warmup replay; false alarms are overlapping window counts.",
+    "Five-minute advance red-warning recall is diagnostic, not the existing yellow-or-red requirement.",
+    "No final holdout is loaded and no model or operating threshold is changed."
+  ],
+  "models": {
+    "linear_5point": {
+      "1": {
+        "crossing_event_count": 7,
+        "detected_event_count": 7,
+        "median_lead_min": 3.0,
+        "min_lead_min": 3.0,
+        "timely_event_counts": {
+          "1": 7,
+          "3": 7,
+          "5": 0
+        },
+        "window_tp": 22,
+        "window_fp": 42,
+        "window_fn": 64,
+        "window_tn": 19482,
+        "window_precision": 0.34375,
+        "window_recall": 0.2558139534883721,
+        "window_f2": 0.2696078431372549,
+        "window_fpr": 0.0021511985248924403,
+        "window_false_alarm_ratio": 0.65625,
+        "all_danger_origins": 934,
+        "event_rows": [
+          {
+            "event_index": 2475,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-14T22:44:51Z",
+            "actual_crossing_time": 1781481891,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2476,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-14T22:48:58Z",
+            "actual_crossing_time": 1781481358,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2493,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-15T23:57:51Z",
+            "actual_crossing_time": 1781571951,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2494,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-16T00:00:56Z",
+            "actual_crossing_time": 1781571416,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2505,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-17T00:47:53Z",
+            "actual_crossing_time": 1781661293,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2513,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-18T01:38:51Z",
+            "actual_crossing_time": 1781751891,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2514,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-18T01:40:50Z",
+            "actual_crossing_time": 1781751050,
+            "lead_time_min": 3.0
+          }
+        ]
+      },
+      "3": {
+        "crossing_event_count": 7,
+        "detected_event_count": 7,
+        "median_lead_min": 5.0,
+        "min_lead_min": 4.0,
+        "timely_event_counts": {
+          "1": 7,
+          "3": 7,
+          "5": 6
+        },
+        "window_tp": 35,
+        "window_fp": 51,
+        "window_fn": 51,
+        "window_tn": 19473,
+        "window_precision": 0.4069767441860465,
+        "window_recall": 0.4069767441860465,
+        "window_f2": 0.4069767441860465,
+        "window_fpr": 0.0026121696373693913,
+        "window_false_alarm_ratio": 0.5930232558139535,
+        "all_danger_origins": 961,
+        "event_rows": [
+          {
+            "event_index": 2475,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-14T22:44:51Z",
+            "actual_crossing_time": 1781481891,
+            "lead_time_min": 5.0
+          },
+          {
+            "event_index": 2476,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-14T22:48:58Z",
+            "actual_crossing_time": 1781481358,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2493,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-15T23:57:51Z",
+            "actual_crossing_time": 1781571951,
+            "lead_time_min": 7.0
+          },
+          {
+            "event_index": 2494,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-16T00:00:56Z",
+            "actual_crossing_time": 1781571416,
+            "lead_time_min": 5.0
+          },
+          {
+            "event_index": 2505,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-17T00:47:53Z",
+            "actual_crossing_time": 1781661293,
+            "lead_time_min": 5.0
+          },
+          {
+            "event_index": 2513,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-18T01:38:51Z",
+            "actual_crossing_time": 1781751891,
+            "lead_time_min": 8.0
+          },
+          {
+            "event_index": 2514,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-18T01:40:50Z",
+            "actual_crossing_time": 1781751050,
+            "lead_time_min": 6.0
+          }
+        ]
+      },
+      "5": {
+        "crossing_event_count": 7,
+        "detected_event_count": 7,
+        "median_lead_min": 8.0,
+        "min_lead_min": 7.0,
+        "timely_event_counts": {
+          "1": 7,
+          "3": 7,
+          "5": 7
+        },
+        "window_tp": 50,
+        "window_fp": 59,
+        "window_fn": 36,
+        "window_tn": 19465,
+        "window_precision": 0.45871559633027525,
+        "window_recall": 0.5813953488372093,
+        "window_f2": 0.5518763796909493,
+        "window_fpr": 0.003021921737348904,
+        "window_false_alarm_ratio": 0.5412844036697247,
+        "all_danger_origins": 988,
+        "event_rows": [
+          {
+            "event_index": 2475,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-14T22:44:51Z",
+            "actual_crossing_time": 1781481891,
+            "lead_time_min": 7.0
+          },
+          {
+            "event_index": 2476,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-14T22:48:58Z",
+            "actual_crossing_time": 1781481358,
+            "lead_time_min": 11.0
+          },
+          {
+            "event_index": 2493,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-15T23:57:51Z",
+            "actual_crossing_time": 1781571951,
+            "lead_time_min": 8.0
+          },
+          {
+            "event_index": 2494,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-16T00:00:56Z",
+            "actual_crossing_time": 1781571416,
+            "lead_time_min": 7.0
+          },
+          {
+            "event_index": 2505,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-17T00:47:53Z",
+            "actual_crossing_time": 1781661293,
+            "lead_time_min": 7.0
+          },
+          {
+            "event_index": 2513,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-18T01:38:51Z",
+            "actual_crossing_time": 1781751891,
+            "lead_time_min": 10.0
+          },
+          {
+            "event_index": 2514,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-18T01:40:50Z",
+            "actual_crossing_time": 1781751050,
+            "lead_time_min": 9.0
+          }
+        ]
+      },
+      "three_to_five": {
+        "additional_danger_origins_all": 27,
+        "additional_danger_origins_complete_precritical": 23,
+        "additional_true_alarm_origins": 15,
+        "additional_false_alarm_origins": 8,
+        "yellow_or_red_states_unchanged": true
+      }
+    },
+    "persistence": {
+      "1": {
+        "crossing_event_count": 7,
+        "detected_event_count": 7,
+        "median_lead_min": 3.0,
+        "min_lead_min": 2.0,
+        "timely_event_counts": {
+          "1": 7,
+          "3": 4,
+          "5": 0
+        },
+        "window_tp": 20,
+        "window_fp": 55,
+        "window_fn": 66,
+        "window_tn": 19469,
+        "window_precision": 0.26666666666666666,
+        "window_recall": 0.23255813953488372,
+        "window_f2": 0.2386634844868735,
+        "window_fpr": 0.0028170456873591477,
+        "window_false_alarm_ratio": 0.7333333333333333,
+        "all_danger_origins": 947,
+        "event_rows": [
+          {
+            "event_index": 2475,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-14T22:44:51Z",
+            "actual_crossing_time": 1781481891,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2476,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-14T22:48:58Z",
+            "actual_crossing_time": 1781481358,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2493,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-15T23:57:51Z",
+            "actual_crossing_time": 1781571951,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2494,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-16T00:00:56Z",
+            "actual_crossing_time": 1781571416,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2505,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-17T00:47:53Z",
+            "actual_crossing_time": 1781661293,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2513,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-18T01:38:51Z",
+            "actual_crossing_time": 1781751891,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2514,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-18T01:40:50Z",
+            "actual_crossing_time": 1781751050,
+            "lead_time_min": 3.0
+          }
+        ]
+      },
+      "3": {
+        "crossing_event_count": 7,
+        "detected_event_count": 7,
+        "median_lead_min": 3.0,
+        "min_lead_min": 2.0,
+        "timely_event_counts": {
+          "1": 7,
+          "3": 4,
+          "5": 0
+        },
+        "window_tp": 20,
+        "window_fp": 55,
+        "window_fn": 66,
+        "window_tn": 19469,
+        "window_precision": 0.26666666666666666,
+        "window_recall": 0.23255813953488372,
+        "window_f2": 0.2386634844868735,
+        "window_fpr": 0.0028170456873591477,
+        "window_false_alarm_ratio": 0.7333333333333333,
+        "all_danger_origins": 947,
+        "event_rows": [
+          {
+            "event_index": 2475,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-14T22:44:51Z",
+            "actual_crossing_time": 1781481891,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2476,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-14T22:48:58Z",
+            "actual_crossing_time": 1781481358,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2493,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-15T23:57:51Z",
+            "actual_crossing_time": 1781571951,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2494,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-16T00:00:56Z",
+            "actual_crossing_time": 1781571416,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2505,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-17T00:47:53Z",
+            "actual_crossing_time": 1781661293,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2513,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-18T01:38:51Z",
+            "actual_crossing_time": 1781751891,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2514,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-18T01:40:50Z",
+            "actual_crossing_time": 1781751050,
+            "lead_time_min": 3.0
+          }
+        ]
+      },
+      "5": {
+        "crossing_event_count": 7,
+        "detected_event_count": 7,
+        "median_lead_min": 3.0,
+        "min_lead_min": 2.0,
+        "timely_event_counts": {
+          "1": 7,
+          "3": 4,
+          "5": 0
+        },
+        "window_tp": 20,
+        "window_fp": 55,
+        "window_fn": 66,
+        "window_tn": 19469,
+        "window_precision": 0.26666666666666666,
+        "window_recall": 0.23255813953488372,
+        "window_f2": 0.2386634844868735,
+        "window_fpr": 0.0028170456873591477,
+        "window_false_alarm_ratio": 0.7333333333333333,
+        "all_danger_origins": 947,
+        "event_rows": [
+          {
+            "event_index": 2475,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-14T22:44:51Z",
+            "actual_crossing_time": 1781481891,
+            "lead_time_min": 3.0
+          },
+          {
+            "event_index": 2476,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-14T22:48:58Z",
+            "actual_crossing_time": 1781481358,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2493,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-15T23:57:51Z",
+            "actual_crossing_time": 1781571951,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2494,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-16T00:00:56Z",
+            "actual_crossing_time": 1781571416,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2505,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-17T00:47:53Z",
+            "actual_crossing_time": 1781661293,
+            "lead_time_min": 2.0
+          },
+          {
+            "event_index": 2513,
+            "sensor_id": "Q-beach-84-st-0me680",
+            "event_start_utc": "2026-06-18T01:38:51Z",
+            "actual_crossing_time": 1781751891,
+            "lead_time_min": 4.0
+          },
+          {
+            "event_index": 2514,
+            "sensor_id": "Q-beach-84th-st-beach-channel-dr-2nf0xc",
+            "event_start_utc": "2026-06-18T01:40:50Z",
+            "actual_crossing_time": 1781751050,
+            "lead_time_min": 3.0
+          }
+        ]
+      },
+      "three_to_five": {
+        "additional_danger_origins_all": 0,
+        "additional_danger_origins_complete_precritical": 0,
+        "additional_true_alarm_origins": 0,
+        "additional_false_alarm_origins": 0,
+        "yellow_or_red_states_unchanged": true
+      }
+    }
+  }
+}

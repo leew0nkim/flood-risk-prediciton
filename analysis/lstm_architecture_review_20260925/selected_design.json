@@ -1,0 +1,53 @@
+{
+  "decision_date": "2026-09-25",
+  "status": "adopted_development_design_not_trained_or_deployed",
+  "decision": "Candidate B architecture with Candidate A staged validation requirements",
+  "input_shape": ["B", 30, 3],
+  "features_in_order": [
+    "depth_z_using_fold_training_scaler",
+    "observed_mask_0_or_1",
+    "last_observation_age_seconds_divided_by_180"
+  ],
+  "feature_construction": "Construct features after depth-only fold scaling; do not scale mask or age with the depth scaler.",
+  "architecture": {
+    "type": "LSTM",
+    "input_size": 3,
+    "hidden_size": 64,
+    "num_layers": 1,
+    "bidirectional": false,
+    "dropout": 0.0,
+    "head": "Linear(64,15)",
+    "head_initialization": "zeros",
+    "prediction_z": "last_input_depth_z + head(final_hidden_state)",
+    "residual_semantics": "Independent horizon changes from a shared anchor; not cumulative one-step increments.",
+    "output_shape": ["B", 15, 1],
+    "parameters": 18639
+  },
+  "anchor": "Last quality-approved causal input; may be forward-filled, so it is not necessarily a fresh current observation.",
+  "postprocessing": "Inverse-transform only depth; clip negative reported metre predictions to zero consistently across candidates.",
+  "retained_quality_gate": "Existing past-only binning, observed-count, maximum gap, bounded forward-fill and freshness criteria remain prerequisites.",
+  "architecture_ablation": [
+    "C0: existing 1-feature absolute-output H64 LSTM",
+    "C1: 3-feature absolute-output H64 LSTM",
+    "C2: selected 3-feature residual-output H64 LSTM"
+  ],
+  "comparison_controls": "Same folds, seeds, sampling, loss, checkpoint criterion and warning policy within each comparison stage.",
+  "stage_one_training": "Masked MAE; hold training and checkpoint definitions fixed across C0/C1/C2 to isolate architecture effects.",
+  "stage_two_training": "Compare selected architecture under masked MAE versus existing high-depth asymmetric MAE (weight 2); compare checkpoint criteria separately, not simultaneously with architecture changes.",
+  "stage_two_aggregation_control": "If adopting event alignment, compute the masked mean per window and batch-mean those window losses under event-balanced sampling for both weight-1 and weight-2 controls. This differs slightly from the current batch-wide valid-label mean and must be recorded as a separate training change.",
+  "risk_checkpoint_candidate": "Mean of per-window masked asymmetric errors within each event, then mean across events, converted to metres; use unclipped predictions for loss alignment and also report clipped operational metrics.",
+  "selection_metrics": [
+    "Event-level warning lead time and timely recall under the fixed policy",
+    "False-warning episodes and duration on available continuous data",
+    "Event-macro MAE and high-depth underprediction",
+    "MAE by horizon, rising periods and input missingness",
+    "Sensitivity across folds and seeds"
+  ],
+  "evaluation_boundary": "Development comparisons use train/validation only; final test splits remain reserved until design and policy are fixed.",
+  "deferred": [
+    "H32 capacity reduction as an isolated comparison",
+    "Candidate A residual q10/q50/q90 head with separate calibration and policy validation",
+    "Additional layers, attention, Transformer, enforced temporal monotonicity or smoothing"
+  ],
+  "release_decision": "No empirical superiority or operating safety has been established. Keep C0 as control; prefer C1 if the residual prior degrades the prespecified validation objectives."
+}

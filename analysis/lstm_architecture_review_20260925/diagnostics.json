@@ -1,0 +1,195 @@
+{
+  "purpose": "structural_diagnostics_not_trained_model_comparison",
+  "architecture": {
+    "features_1_hidden_64_layers_1": {
+      "parameters": 18127,
+      "output_shape": [
+        2,
+        15,
+        1
+      ],
+      "finite_outputs": true,
+      "finite_gradients": true
+    },
+    "features_3_hidden_64_layers_1": {
+      "parameters": 18639,
+      "output_shape": [
+        2,
+        15,
+        1
+      ],
+      "finite_outputs": true,
+      "finite_gradients": true
+    },
+    "features_3_hidden_32_layers_1": {
+      "parameters": 5231,
+      "output_shape": [
+        2,
+        15,
+        1
+      ],
+      "finite_outputs": true,
+      "finite_gradients": true
+    },
+    "features_3_hidden_64_layers_2": {
+      "parameters": 51919,
+      "output_shape": [
+        2,
+        15,
+        1
+      ],
+      "finite_outputs": true,
+      "finite_gradients": true
+    }
+  },
+  "development_splits": {
+    "train": {
+      "windows": 95597,
+      "events": 978,
+      "windows_with_imputed_bins": 67139,
+      "fraction_windows_with_imputed_bins": 0.7023128340847516,
+      "fraction_last_bin_imputed": 0.048034980177202216,
+      "age_seconds_percentiles_0_50_90_99_100": [
+        0.0,
+        15.0,
+        54.0,
+        68.0,
+        126.0
+      ],
+      "observed_target_positions": 1383229,
+      "target_positions_at_least_030_m": 74333,
+      "fraction_high_target_positions": 0.05373875186248987,
+      "events_with_fully_observed_onset_windows": 33,
+      "identical_depth_input_groups_with_different_observed_masks": 286,
+      "example_identical_input_different_mask": {
+        "sample_indices": [
+          1071,
+          1072
+        ],
+        "observed_masks": [
+          [
+            true,
+            true,
+            false,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            false,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        ],
+        "identical_depth_input": true
+      }
+    },
+    "validation": {
+      "windows": 24857,
+      "events": 237,
+      "windows_with_imputed_bins": 8205,
+      "fraction_windows_with_imputed_bins": 0.3300881039546204,
+      "fraction_last_bin_imputed": 0.01540813452950879,
+      "age_seconds_percentiles_0_50_90_99_100": [
+        0.0,
+        0.0,
+        50.0,
+        60.0,
+        125.0
+      ],
+      "observed_target_positions": 368315,
+      "target_positions_at_least_030_m": 11826,
+      "fraction_high_target_positions": 0.0321083854852504,
+      "events_with_fully_observed_onset_windows": 7,
+      "identical_depth_input_groups_with_different_observed_masks": 0,
+      "example_identical_input_different_mask": null
+    }
+  },
+  "candidate_A_quantile_parameter_count": 6221,
+  "candidate_B_untrained_structural_check": {
+    "parameters": 18639,
+    "output_shape": [
+      4,
+      15,
+      1
+    ],
+    "zero_head_initial_prediction_exactly_persistence": true,
+    "first_backward_encoder_gradients_are_zero": true,
+    "first_backward_head_has_nonzero_gradient": true,
+    "meaning": "Shape and initialization invariants only; no accuracy or safety claim."
+  },
+  "synthetic_checkpoint_ranking_counterexample": {
+    "P_lower_overall_MAE": {
+      "overall_MAE_m": 0.001999999862164259,
+      "risk_weighted_loss_identity_scaler": 0.003999999724328518,
+      "high_water_underprediction_m": 0.19999998807907104
+    },
+    "Q_lower_risk_loss": {
+      "overall_MAE_m": 0.0020839970093220472,
+      "risk_weighted_loss_identity_scaler": 0.002583997091278434,
+      "high_water_underprediction_m": 0.049999985843896866
+    }
+  },
+  "sha256": {
+    "meit_model/lstm.py": "1a92950f0ee73f284b90ae036e89603b50add53d401b1cf443113dcf186ac568",
+    "meit_model/train_lstm_cv.py": "0fa040c706aec7372f8353cebeecdfa3558b68d1ad0b4a5904ad8cccc2f695b6",
+    "meit_model/train_risk_lstm_cv.py": "f6719b1619a2a01017dc3343bc8928578523e019ef137fa1339f7e363dfd404b",
+    "meit_model/risk_loss.py": "cd49f4a696ac477b682e3e974ead1f4fda19bd42be28d43825842dcef236111b",
+    "data/processed/train.npz": "74321e3c2cab0b702dbd3e83f8eb7be5f86d61bcfb27fa7003016124ee80051b",
+    "data/processed/validation.npz": "74aa9deb10660694c1d78a6fa51847e6ea5f8b8fa42b82ae68748e69185e3695",
+    "data/processed/scaler.json": "b71f7e5cc80e0110e91e0849e651d92187daadd870d3adb450c99a6cf02bc19d"
+  },
+  "torch_version": "2.11.0",
+  "trained_checkpoints_found": []
+}

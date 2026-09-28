@@ -1,0 +1,77 @@
+{
+  "confirmed_danger_then_sensor_loss": {
+    "initial_state": "DANGER",
+    "after_181_seconds_state": "WARNING",
+    "sensor_status": "STALE",
+    "retained_depth_m": 0.5
+  },
+  "wall_clock_rollback": {
+    "exception": "ValueError",
+    "message": "Session clock must be finite and nondecreasing"
+  },
+  "old_ready_forecast": {
+    "forecast_year": 2000,
+    "state": "SAFE",
+    "forecast_status": "READY"
+  },
+  "finite_input_nonfinite_ready_output": {
+    "parser_accepted": true,
+    "forecast_status": "READY",
+    "all_predictions_finite": false,
+    "serialization": "ValueError"
+  },
+  "float32_warning_boundary": {
+    "input_m": 0.29,
+    "forecast_m": 0.28999999165534973,
+    "state": "WARNING",
+    "t_warning_min": null
+  },
+  "checkpoint_contract_mismatch": {
+    "normalization_version": 1,
+    "depth_unit": "inches",
+    "bin_seconds": 5,
+    "loaded": true,
+    "prediction_status": "READY",
+    "note": "Synthetic untrained weights; this does not measure model accuracy."
+  },
+  "baseline_specification_difference": {
+    "last_five_bins_m": [
+      0.1,
+      0.1,
+      0.1,
+      0.3,
+      0.5
+    ],
+    "observed_mask": [
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "actual_observation_minutes_relative_to_origin": [
+      -4.0,
+      -1.0,
+      0.0
+    ],
+    "existing_plus_one_m": 0.5200000405311584,
+    "documented_observed_slope_last_observation_anchor_plus_one_m": 0.5923076923076923,
+    "note": "The documented alternative is not asserted to be more accurate."
+  },
+  "risk_holdout_time_overlap": {
+    "risk_events_with_samples": 66,
+    "risk_events_with_overlapping_training_sample_intervals": 8,
+    "event_indices": [
+      426,
+      428,
+      430,
+      434,
+      688,
+      689,
+      693,
+      1700
+    ],
+    "overlap_same_sensor_sample_count": 0,
+    "note": "Cross-sensor temporal overlap; not proof of direct label leakage or one shared storm."
+  }
+}
