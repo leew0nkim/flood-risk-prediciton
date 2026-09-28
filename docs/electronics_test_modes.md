@@ -1,3 +1,42 @@
+# Live integration update
+
+The runner supports live (default), quick and accumulate. Importing it does not
+load a checkpoint or open a port. quick/accumulate remain model-free tests.
+
+```bash
+python -m meit_model.run_electronics_integration --mode live --port COM3 --baudrate 9600 --checkpoint artifacts/risk_lstm_cv_v2/fold_1/best_model.pt
+```
+
+Live uses the existing causal prepare_input preprocessing on a fixed session
+minute grid. Only completed bins enter the 30-minute input. The last observation
+per bin is selected; missing-bin quality rules match pipeline_config.json.
+Checkpoint normalization is applied once by ForecastPredictor. Inference runs
+once per completed bin; current paired depths update risk on each valid packet.
+Forecast times are relative to forecast_origin_unix_seconds (the completed bin),
+not the latest sub-minute packet receipt time.
+
+Host receipt time is derived from startup UTC plus monotonic elapsed time.
+Sensor measurement timestamps are not available in the current wire protocol.
+After 180 seconds without a valid packet (configured maximum age), output is
+STALE/INSUFFICIENT_DATA, forecast/timing diagnostics are cleared, and LED is at
+least WARNING; previously confirmed DANGER is retained until fresh input.
+Long raw gaps reset history. This is not an immediate SENSOR ERROR interlock.
+A disconnected host/failed serial write cannot transmit a warning: firmware
+must implement its own receive watchdog. Commands always remain NONE.
+
+Default board output is compact state/mock/command JSON; full diagnostic JSON
+is printed on the host. Use --full-wire-payload only with compatible firmware.
+
+Verification: python -m unittest discover -s tests
+Policy scenarios: python -m meit_model.evaluate_led_scenarios
+Synthetic policy report: artifacts/led_policy/scenarios.json
+Actual checkpoint with synthetic sensor replay: artifacts/led_policy/live_checkpoint_replay.json
+Neither report measures real-world LED recall or mechanical door safety.
+
+---
+
+> Policy update: see early_warning_policy.md. Current equivalent depth is diagnostic only. t_critical_min (0.30m, outside-higher, indoor held constant) controls future LED severity. t_external_warning_min is diagnostic only.
+
 # 학습 모델을 연결하지 않는 전자시스템 연동 시험
 
 두 모드 모두 체크포인트를 로딩하지 않는다. `prediction_source=mock`, `command=NONE`이다.
@@ -128,15 +167,15 @@ python -m meit_model.run_electronics_integration --mode accumulate --port COM3
 | `forecast_status`, `predicted_depths_m` | 외부 예측 상태와 +1~+15분 mock 배열 |
 | `forecast_origin_unix_seconds` | 예측 기준 시각; accumulate는 마지막 완료 bin 끝 |
 | `state` | 전체 LED 경고; 세 위험 중 가장 높은 단계 |
-| `external_state`, `internal_state`, `pressure_state` | 외부 침수 / 실내 침수 / 현재 수압 차이 경고 |
+| `external_state`, `internal_state`, `forecast_state` | 외부 침수 / 실내 침수 / 현재 수압 차이 경고 |
 | `depth_gap_m` | 외부−실내 수위, 부호 있음 |
 | `equivalent_depth_m`, `pressure_direction` | 등가수심 크기와 압력 우세 방향 |
 | `bottom_pressure_difference_pa` | 공통 문 하단에서의 압력 차, 문 전체 힘 아님 |
 | `pressure_status` | 부분 침수 가정의 계산 또는 자료 부족 상태 |
-| `pressure_warning_equivalent_depth_m`, `pressure_critical_equivalent_depth_m` | 등가수심 잠정 경고 / 기획서 임계값 |
-| `t_warning_min`, `t_external_critical_min` | 기존 외부 0.29 / 0.30m 도달시간 |
+| `pressure_critical_equivalent_depth_m` | 등가수심 잠정 경고 / 기획서 임계값 |
+| `t_external_warning_min`, `t_external_critical_min` | 기존 외부 0.29 / 0.30m 도달시간 |
 | `pressure_forecast_status` | CONDITIONAL_INTERNAL_CONSTANT 또는 UNAVAILABLE 계열 |
-| `t_pressure_critical_if_internal_constant_min` | 실내 수위 고정 조건에서 외부 우세 등가수심 0.40m 도달시간 |
+| `t_pressure_critical_if_internal_constant_min` | 실내 수위 고정 조건에서 외부 우세 등가수심 0.30m 도달시간 |
 | `serial_input_error` | 가장 최근 파싱 오류; 다음 정상 패킷에서 해제 |
 | `command` | 항상 NONE |
 

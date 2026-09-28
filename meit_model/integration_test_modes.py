@@ -1,4 +1,4 @@
-"""Test sessions with an injected clock; no checkpoint or device access."""
+"""Fixed-minute sensor sessions with an injected clock and optional predictor."""
 from collections import deque
 from datetime import datetime, timezone
 import math
@@ -12,11 +12,16 @@ from meit_model.risk import RiskEngine
 
 
 class IntegrationSession:
-    def __init__(self, mode, config, started_at, scenario='cycle', scenario_seconds=5):
-        if mode not in ('quick', 'accumulate') or scenario not in ('cycle', 'safe', 'warning', 'danger', 'equalized', 'inside-high'):
+    def __init__(self, mode, config, started_at, scenario='cycle', scenario_seconds=5, *, predictor=None):
+        if mode not in ('live', 'quick', 'accumulate') or scenario not in ('cycle', 'safe', 'warning', 'danger', 'equalized', 'inside-high'):
             raise ValueError('Invalid integration test mode/scenario')
         if not math.isfinite(started_at) or not math.isfinite(scenario_seconds) or scenario_seconds <= 0:
             raise ValueError('Invalid session time/scenario duration')
+        if mode == 'live' and predictor is None:
+            raise ValueError('Live mode requires a predictor')
+        self.predictor = predictor
+        self.cached_forecast = None
+        self.prediction_bin = None
         validate_config(config)
         self.mode, self.config, self.scenario = mode, config, scenario
         self.started_at, self.scenario_seconds = started_at, scenario_seconds
@@ -53,6 +58,9 @@ class IntegrationSession:
             if self.last_received is not None and now - self.last_received > self.config['quality']['split_raw_gap_gt_seconds']:
                 self.samples.clear()
                 self.input_result = None
+                self.last_bin = None
+                self.cached_forecast = None
+                self.prediction_bin = None
                 self.history_bins = self.observed_bins = 0
             if self.samples and self.samples[-1][0] == now:
                 self.samples.pop()
@@ -103,6 +111,15 @@ class IntegrationSession:
             ready = status == 'READY'
             values = [float(result['X'][0, -1, 0])] * 15 if ready else None
             forecast = ForecastResult(status, values, None)
+            if self.mode == 'live' and ready:
+                if self.prediction_bin != end:
+                    # prepare_input uses an identity transform: predictor accepts
+                    # metres and applies the checkpoint scaler exactly once.
+                    self.cached_forecast = self.predictor.predict(
+                        result['X'][0, :, 0].tolist(),
+                        origin_time=datetime.fromtimestamp(end, timezone.utc))
+                    self.prediction_bin = end
+                forecast = self.cached_forecast
             current = self.last_depth
             internal = self.last_internal_depth
             equalization_active = self.last_equalization_active
@@ -117,7 +134,7 @@ class IntegrationSession:
             # Losing telemetry must not downgrade an already observed DANGER.
             state = 'DANGER' if state == 'DANGER' or self.last_valid_state == 'DANGER' else 'WARNING'
         payload = {
-            'mode': self.mode, 'prediction_source': 'mock', 'scenario': selected_scenario,
+            'mode': self.mode, 'prediction_source': 'lstm' if self.mode == 'live' else 'mock', 'scenario': selected_scenario,
             'timestamp_utc': datetime.fromtimestamp(now, timezone.utc).isoformat(),
             'timestamp_source': 'host_receipt_time',
             'sensor_status': sensor_status, 'sensor_age_seconds': age,
@@ -132,7 +149,7 @@ class IntegrationSession:
             'history_bins': self.history_bins, 'observed_history_bins': self.observed_bins,
             'required_history_bins': 30, 'grid_origin_unix_seconds': self.grid_origin,
             'state': state,
-            't_warning_min': evaluated.t_warning_min if evaluated and fresh else None,
+            't_external_warning_min': evaluated.t_external_warning_min if evaluated and fresh else None,
             't_external_critical_min': evaluated.t_external_critical_min if evaluated and fresh else None,
             'pressure_status': evaluated.pressure_status if evaluated and fresh else sensor_status,
             'pressure_forecast_status': evaluated.pressure_forecast_status if evaluated and fresh else 'UNAVAILABLE',
@@ -140,9 +157,9 @@ class IntegrationSession:
                 evaluated.t_pressure_critical_if_internal_constant_min if evaluated and fresh else None),
             'command': 'NONE',
         }
-        for field in ('external_state', 'internal_state', 'pressure_state', 'depth_gap_m',
+        for field in ('external_state', 'internal_state', 'current_state', 'forecast_state', 'depth_gap_m',
                       'equivalent_depth_m', 'bottom_pressure_difference_pa', 'pressure_direction'):
             payload[field] = getattr(evaluated, field) if evaluated and fresh else None
-        payload['pressure_warning_equivalent_depth_m'] = self.risk.pressure_warning_equivalent_depth_m
+        payload['t_critical_min'] = evaluated.t_critical_min if evaluated and fresh else None
         payload['pressure_critical_equivalent_depth_m'] = self.risk.pressure_critical_equivalent_depth_m
         return payload

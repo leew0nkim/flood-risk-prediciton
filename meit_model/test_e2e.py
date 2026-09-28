@@ -38,7 +38,7 @@ live = LiveForecastBuffer(
 risk_engine = RiskEngine(
     warning_current_depth_m=0.25,
     external_critical_depth_m=0.30,
-    forecast_warning_depth_m=0.29,
+    forecast_warning_depth_m=0.295,
     danger_horizon_min=5,
 
     internal_warning_depth_m=0.25,

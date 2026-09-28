@@ -238,11 +238,12 @@ class ElectronicsTests(unittest.TestCase):
         self.assertEqual(result['t_pressure_critical_if_internal_constant_min'], 0)
         equalized = session.update(packet(.5, .5), 1801)
         self.assertEqual(equalized['equivalent_depth_m'], 0.)
-        self.assertEqual(equalized['pressure_state'], 'SAFE')
+        self.assertEqual(equalized['forecast_state'], 'SAFE')
         self.assertEqual(equalized['state'], 'DANGER')
         active = session.update(packet(.5, .3, True), 1802)
-        self.assertEqual(active['pressure_forecast_status'], 'UNAVAILABLE_EQUALIZATION_ACTIVE')
-        self.assertIsNone(active['t_pressure_critical_if_internal_constant_min'])
+        self.assertEqual(active['pressure_forecast_status'], 'CURRENT_CRITICAL_REACHED')
+        self.assertEqual(active['t_pressure_critical_if_internal_constant_min'], 0)
+        self.assertEqual(active['t_critical_min'], 0)
 
     def test_invalid_internal_packet_does_not_refresh_pair(self):
         fake = FakeSerial([wire(.2, .1), wire(.6, None)])

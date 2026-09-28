@@ -129,7 +129,7 @@ def test_external_danger():
 
 def test_current_external_warning_time_zero():
     """
-    현재 외부수위가 이미 0.29m 이상이면,
+    현재 외부수위가 이미 0.295m 이상이면,
     미래 예측과 관계없이 external warning time은 0분이어야 한다.
     """
     engine = RiskEngine()
@@ -231,7 +231,7 @@ def test_future_pressure_danger():
 
 def test_external_forecast_warning_is_not_led_rule():
     """
-    외부수위 예측이 0.29m를 넘었다는 것만으로
+    외부수위 예측이 0.295m를 넘었다는 것만으로
     LED WARNING이 되어서는 안 된다.
 
     LED 미래 위험은 미래 등가수심 기반 T_critical로 판단한다.
@@ -243,7 +243,7 @@ def test_external_forecast_warning_is_not_led_rule():
         internal_depth_m=0.20,
         equalization_active=False,
         forecast=make_forecast(
-            [0.29] * 15
+            [0.295] * 15
         ),
     )
 

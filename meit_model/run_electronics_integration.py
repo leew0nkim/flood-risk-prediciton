@@ -1,4 +1,4 @@
-"""Model-free electronics tests. All output commands are NONE."""
+"""Live LSTM and model-free electronics tests. All commands are NONE."""
 import argparse
 import json
 import math
@@ -12,8 +12,9 @@ from meit_model.integration_test_modes import IntegrationSession
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=('quick', 'accumulate'), required=True)
-    parser.add_argument('--port', help='Serial port, e.g. COM3 or /dev/cu.usbmodem...')
+    parser.add_argument('--mode', choices=('live', 'quick', 'accumulate'), default='live')
+    parser.add_argument('--port', default='COM3', help='Serial port, e.g. COM3 or /dev/cu.usbmodem...')
+    parser.add_argument('--checkpoint', type=Path, default=Path('artifacts/risk_lstm_cv_v2/fold_1/best_model.pt'))
     parser.add_argument('--baudrate', type=int, default=9600)
     parser.add_argument('--scenario', choices=('cycle', 'safe', 'warning', 'danger', 'equalized', 'inside-high'), default='cycle')
     parser.add_argument('--scenario-seconds', type=float, default=5)
@@ -35,8 +36,14 @@ def main(argv=None):
         parser.error('--scenario-seconds must be positive and finite')
     if args.max_messages < 0 or args.baudrate <= 0:
         parser.error('invalid message count or baudrate')
-    config = json.loads(args.config.read_text())
-    session = IntegrationSession(args.mode, config, time.time(), args.scenario, args.scenario_seconds)
+    config = json.loads(args.config.read_text(encoding='utf-8'))
+    predictor = None
+    if args.mode == 'live':
+        from meit_model.predictor import ForecastPredictor
+        predictor = ForecastPredictor(args.checkpoint)
+    # Monotonic elapsed time avoids wall-clock corrections resetting the grid.
+    epoch, tick = time.time(), time.monotonic()
+    session = IntegrationSession(args.mode, config, epoch, args.scenario, args.scenario_seconds, predictor=predictor)
     transport = None
     try:
         if not args.dry_run:
@@ -58,7 +65,7 @@ def main(argv=None):
                 if packet is None:
                     time.sleep(0.01)
                     continue
-            payload = session.update(packet, time.time())
+            payload = session.update(packet, epoch + time.monotonic() - tick)
             if args.reply_on_input or time.monotonic() >= next_send:
                 if not args.reply_on_input:
                     payload.update(transport.input_status() if transport else {

@@ -9,20 +9,20 @@ class RiskEngineTests(unittest.TestCase):
         cases = [
             (.20, [.20] * 15, 'SAFE', None, None),
             (.26, [.26] * 15, 'WARNING', None, None),
-            (.22, [.27] * 9 + [.291] * 6, 'WARNING', 10, None),
-            (.22, [.27, .275, .280, .291] + [.295] * 11, 'DANGER', 4, None),
-            (.22, [.27] * 4 + [.291] * 11, 'DANGER', 5, None),
-            (.22, [.27] * 5 + [.291] * 10, 'WARNING', 6, None),
-            (.22, [.27] * 3 + [.291] * 6 + [.31] * 6, 'DANGER', 4, 10),
+            (.22, [.27] * 9 + [.291] * 6, 'SAFE', None, None),
+            (.22, [.27, .275, .280, .291] + [.295] * 11, 'SAFE', 5, None),
+            (.22, [.27] * 4 + [.291] * 11, 'SAFE', None, None),
+            (.22, [.27] * 5 + [.291] * 10, 'SAFE', None, None),
+            (.22, [.27] * 3 + [.291] * 6 + [.31] * 6, 'WARNING', 10, 10),
             (.305, [.31] * 15, 'DANGER', 0, 0),
         ]
         for current, values, state, warning, critical in cases:
             with self.subTest(current=current, values=values):
-                result = engine.evaluate(current, ForecastResult('READY', values, None), internal_depth_m=0.)
+                result = engine.evaluate(current, ForecastResult('READY', values, None), internal_depth_m=0., equalization_active=False)
                 self.assertEqual((result.state, result.t_warning_min,
                                   result.t_external_critical_min), (state, warning, critical))
                 self.assertFalse(hasattr(result, 'command'))
-                self.assertFalse(hasattr(result, 't_critical_min'))
+                self.assertEqual(result.t_external_warning_min, warning)
 
     def test_unavailable_forecast_and_current_danger_priority(self):
         engine = RiskEngine()
@@ -42,12 +42,13 @@ class RiskEngineTests(unittest.TestCase):
                         {'danger_horizon_min': 5.5},
                         {'internal_warning_depth_m': .31},
                         {'internal_critical_depth_m': float('nan')},
-                        {'pressure_warning_equivalent_depth_m': .41},
+                        {'pressure_critical_equivalent_depth_m': 0},
                         {'pressure_critical_equivalent_depth_m': float('inf')}]:
             with self.assertRaises(ValueError):
                 RiskEngine(**options)
 
     def evaluate_pair(self, outside, inside, values=None, **options):
+        options.setdefault('equalization_active', False)
         return RiskEngine().evaluate(outside, ForecastResult('READY', values or [.2] * 15, None),
             internal_depth_m=inside, **options)
 
@@ -67,12 +68,12 @@ class RiskEngineTests(unittest.TestCase):
         self.assertEqual(result.equivalent_depth_m, 0.)
         self.assertEqual(result.bottom_pressure_difference_pa, 0.)
         self.assertEqual(result.pressure_direction, 'BALANCED')
-        self.assertEqual(result.pressure_state, 'SAFE')
+        self.assertEqual(result.forecast_state, 'SAFE')
         self.assertEqual((result.external_state, result.internal_state, result.state), ('DANGER',) * 3)
 
     def test_analytical_pressure_boundaries_are_inclusive(self):
-        self.assertEqual(self.evaluate_pair(.5, .4).pressure_state, 'WARNING')
-        self.assertEqual(self.evaluate_pair(.5, .3).pressure_state, 'DANGER')
+        self.assertEqual(self.evaluate_pair(.5, .4).t_critical_min, 0)
+        self.assertEqual(self.evaluate_pair(.5, .3).t_critical_min, 0)
 
     def test_reverse_pressure_and_indoor_flood_are_retained(self):
         result = self.evaluate_pair(.3, .5)
@@ -105,7 +106,7 @@ class RiskEngineTests(unittest.TestCase):
     def test_conditional_pressure_time_uses_internal_depth(self):
         values = [.3] * 2 + [.5] * 13
         low = self.evaluate_pair(.2, .3, values, equalization_active=False)
-        high = self.evaluate_pair(.2, .4, values, equalization_active=False)
+        high = self.evaluate_pair(.2, .41, values, equalization_active=False)
         self.assertEqual(low.pressure_forecast_status, 'CONDITIONAL_INTERNAL_CONSTANT')
         self.assertEqual(low.t_pressure_critical_if_internal_constant_min, 3)
         self.assertIsNone(high.t_pressure_critical_if_internal_constant_min)
@@ -137,3 +138,52 @@ class RiskEngineTests(unittest.TestCase):
         self.assertEqual(result.forecast_status, 'INVALID_FORECAST')
         self.assertEqual(result.state, 'DANGER')
         self.assertIsNone(result.t_pressure_critical_if_internal_constant_min)
+
+
+class FuturePressurePolicyTests(unittest.TestCase):
+    def test_lead_boundaries_and_internal_level(self):
+        for minute, expected in [(4, 'DANGER'), (5, 'DANGER'), (6, 'WARNING'), (15, 'WARNING')]:
+            values = [.22] * (minute - 1) + [.30] * (16 - minute)
+            result = RiskEngine().evaluate(.22, ForecastResult('READY', values, None),
+                internal_depth_m=0., equalization_active=False)
+            self.assertEqual(result.t_critical_min, minute)
+            self.assertEqual(result.state, expected)
+        result = RiskEngine().evaluate(.22, ForecastResult('READY', [.30] * 15, None),
+            internal_depth_m=.20, equalization_active=False)
+        self.assertEqual(result.t_external_critical_min, 1)
+        self.assertIsNone(result.t_critical_min)
+        self.assertEqual(result.state, 'SAFE')
+
+    def test_reverse_pressure_is_not_future_opening_risk(self):
+        result = RiskEngine().evaluate(.10, ForecastResult('READY', [.10] * 15, None),
+            internal_depth_m=.40, equalization_active=False)
+        self.assertIsNone(result.t_critical_min)
+        self.assertEqual(result.forecast_state, 'SAFE')
+        self.assertEqual(result.state, 'DANGER')
+
+
+class CurrentCrossingTests(unittest.TestCase):
+    def test_external_times_independently_include_current_depth(self):
+        for status, values in [('READY', [.2] * 15), ('WARMUP', None)]:
+            for depth, warning, critical in [(.289, None, None), (.29, None, None), (.295, 0, None), (.30, 0, 0)]:
+                with self.subTest(status=status, depth=depth):
+                    r = RiskEngine().evaluate(depth, ForecastResult(status, values, None))
+                    self.assertEqual((r.t_external_warning_min, r.t_external_critical_min), (warning, critical))
+
+    def test_current_pressure_reached_without_usable_forecast(self):
+        for status, values in [('READY', [.2] * 15), ('READY', [float('nan')] * 15),
+                               ('WARMUP', None), ('INSUFFICIENT_DATA', None), ('PREDICTION_ERROR', None)]:
+            for active in (False, True, None):
+                with self.subTest(status=status, active=active):
+                    r = RiskEngine().evaluate(.5, ForecastResult(status, values, None),
+                        internal_depth_m=.4, equalization_active=active)
+                    self.assertEqual(r.t_critical_min, 0)
+                    self.assertEqual(r.t_pressure_critical_if_internal_constant_min, 0)
+                    self.assertEqual(r.pressure_forecast_status, 'CURRENT_CRITICAL_REACHED')
+                    self.assertEqual((r.state, r.forecast_state), ('DANGER', 'DANGER'))
+                    self.assertEqual(r.forecast_status, 'INVALID_FORECAST' if status == 'READY' and values[0] != values[0] else status)
+
+    def test_no_false_current_crossing(self):
+        for outside, inside in [(.4, .5), (.5, .5), (.2, 0.), (.5, None)]:
+            r = RiskEngine().evaluate(outside, ForecastResult('WARMUP', None, None), internal_depth_m=inside)
+            self.assertIsNone(r.t_critical_min)
