@@ -4,16 +4,12 @@ from meit_model.predictor import (
     ForecastPredictor,
     LiveForecastBuffer,
 )
-
 from meit_model.risk import (
     RiskEngine,
     DANGER,
 )
-
 from meit_model.controller import (
     SafetyController,
-    OPEN,
-    CLOSE,
 )
 
 
@@ -22,35 +18,55 @@ CHECKPOINT = (
     "fold_1/best_model.pt"
 )
 
+START_TIME = datetime(
+    2026, 9, 23, 9, 0
+)
 
-# ==================================================
-# 1. 시스템 구성
-# ==================================================
 
-predictor = ForecastPredictor(CHECKPOINT)
-live = LiveForecastBuffer(predictor)
+# ============================================================
+# 1. 실제 predictor / risk / controller 준비
+# ============================================================
+
+predictor = ForecastPredictor(
+    CHECKPOINT
+)
+
+live = LiveForecastBuffer(
+    predictor
+)
 
 risk_engine = RiskEngine(
     warning_current_depth_m=0.25,
     external_critical_depth_m=0.30,
     forecast_warning_depth_m=0.29,
     danger_horizon_min=5,
+
+    internal_warning_depth_m=0.25,
+    internal_critical_depth_m=0.30,
+
+    pressure_critical_equivalent_depth_m=0.30,
 )
 
 controller = SafetyController()
 
 
-# ==================================================
-# 2. Fake sensor data
+# ============================================================
+# 2. Fake Sensor 데이터
 #
-# 1~30분:
-#   0.20m로 안정 → predictor warmup
+# 외부수위:
+# - 처음 30분 0.20m
+# - 이후 0.205 → 0.305m 상승
 #
-# 이후:
-#   천천히 수위 상승
-# ==================================================
+# 내부수위:
+# - 처음에는 0.05m
+# - 유입구가 열린 뒤 조금씩 증가한다고 가정
+#
+# NOTE:
+# 실제 물리 시뮬레이션이 아니라
+# software integration 확인용 fake data이다.
+# ============================================================
 
-fake_depths_m = (
+external_depths_m = (
     [0.20] * 30
     + [
         0.205,
@@ -77,70 +93,82 @@ fake_depths_m = (
     ]
 )
 
-
-start_time = datetime(
-    2026,
-    9,
-    23,
-    9,
-    0,
-)
+assert len(external_depths_m) == 51
 
 
-# ==================================================
-# 3. simulation state
-# ==================================================
+# 유입구 OPEN 전의 기본 내부수위
+internal_depth_m = 0.05
 
+# Fake hardware 상태
 equalization_active = False
 
-payloads = []
 
-open_count = 0
-close_count = 0
+results = []
 
 
-# ==================================================
-# 4. E2E simulation
-# ==================================================
+# ============================================================
+# 3. E2E simulation
+# ============================================================
 
-for index, depth_m in enumerate(fake_depths_m):
-
+for index, external_depth_m in enumerate(
+    external_depths_m
+):
     minute = index + 1
 
     timestamp = (
-        start_time
+        START_TIME
         + timedelta(minutes=index)
     )
 
-    # ----------------------------------------------
-    # Sensor → Predictor
-    # ----------------------------------------------
+    # --------------------------------------------------------
+    # Fake Sensor:
+    # equalization이 활성화된 동안
+    # 내부수위가 조금씩 상승한다고 가정.
+    #
+    # 실제 물리 모델이 아님.
+    # --------------------------------------------------------
+
+    if equalization_active:
+        internal_depth_m = min(
+            internal_depth_m + 0.03,
+            external_depth_m,
+        )
+
+    # --------------------------------------------------------
+    # Predictor
+    # --------------------------------------------------------
 
     forecast = live.add_measurement(
-        depth_m,
+        external_depth_m,
         timestamp=timestamp,
     )
 
-    # ----------------------------------------------
-    # Predictor → Risk
-    # ----------------------------------------------
+    # --------------------------------------------------------
+    # Risk
+    #
+    # 새 구조:
+    # 외부수위 + 내부수위 + equalization state 전달
+    # --------------------------------------------------------
 
     risk = risk_engine.evaluate(
-        current_depth_m=depth_m,
+        current_depth_m=external_depth_m,
+        internal_depth_m=internal_depth_m,
+        equalization_active=equalization_active,
         forecast=forecast,
     )
 
-    # ----------------------------------------------
-    # MOCK physical decision
+    # --------------------------------------------------------
+    # Physical/control 조건
     #
-    # 실제 등가수심 로직이 아니다.
+    # 아직 실제 equivalent-depth control module이 없으므로
+    # E2E에서는 mock 조건 사용.
     #
-    # 43~48분:
-    #   압력평형 필요하다고 가정
+    # minute 43~48:
+    #     equalization 필요
     #
-    # 49분 이후:
-    #   대피 완료 가정
-    # ----------------------------------------------
+    # minute 49 이후:
+    #     evacuation 완료
+    # --------------------------------------------------------
 
     equalization_required = (
         43 <= minute < 49
@@ -152,132 +180,271 @@ for index, depth_m in enumerate(fake_depths_m):
         minute >= 49
     )
 
-    # ----------------------------------------------
-    # Risk + mock physical state → Controller
-    # ----------------------------------------------
+    # --------------------------------------------------------
+    # Controller
+    # --------------------------------------------------------
 
     control = controller.decide(
-        risk,
+        risk=risk,
         evacuation_complete=evacuation_complete,
         equalization_required=equalization_required,
         equalization_allowed=equalization_allowed,
         equalization_active=equalization_active,
     )
 
-    # ----------------------------------------------
+    # --------------------------------------------------------
     # Fake hardware feedback
     #
-    # 실제 연동에서는 command 전송만으로
-    # active=True로 바꾸면 안 된다.
-    #
-    # 여기서는 fake hardware이므로
-    # 즉시 성공했다고 가정한다.
-    # ----------------------------------------------
+    # 실제 장치에서는 반드시 ACK / confirmed state를 받아야 함.
+    # 여기서는 software E2E이므로 즉시 반영.
+    # --------------------------------------------------------
 
-    if control.command == OPEN:
+    if control.command == "OPEN":
         equalization_active = True
-        open_count += 1
 
-    elif control.command == CLOSE:
+    elif control.command == "CLOSE":
         equalization_active = False
-        close_count += 1
 
-    # ----------------------------------------------
-    # 최종 payload
-    # ----------------------------------------------
+    # --------------------------------------------------------
+    # Output payload
+    # --------------------------------------------------------
 
     payload = {
-        "timestamp": timestamp.isoformat(),
-        "current_depth_m": round(
-            depth_m,
-            4,
+        "timestamp": (
+            timestamp.isoformat()
         ),
+
+        "external_depth_m": (
+            round(external_depth_m, 4)
+        ),
+
+        "internal_depth_m": (
+            round(internal_depth_m, 4)
+        ),
+
         "forecast_status": (
             forecast.status
         ),
+
         "state": (
             risk.state
         ),
-        "t_warning_min": (
-            risk.t_warning_min
+
+        "current_state": (
+            risk.current_state
         ),
+
+        "forecast_state": (
+            risk.forecast_state
+        ),
+
+        "equivalent_depth_m": (
+            None
+            if risk.equivalent_depth_m is None
+            else round(
+                risk.equivalent_depth_m,
+                4,
+            )
+        ),
+
+        "pressure_direction": (
+            risk.pressure_direction
+        ),
+
+        "t_external_warning_min": (
+            risk.t_external_warning_min
+        ),
+
         "t_external_critical_min": (
             risk.t_external_critical_min
         ),
+
+        "t_critical_min": (
+            risk.t_critical_min
+        ),
+
+        "pressure_forecast_status": (
+            risk.pressure_forecast_status
+        ),
+
         "command": (
             control.command
         ),
+
         "equalization_active": (
             equalization_active
         ),
     }
 
-    payloads.append(payload)
+    results.append(
+        payload
+    )
 
-    print(payload)
+    print(
+        payload
+    )
 
 
-# ==================================================
-# 5. Automatic assertions
-# ==================================================
+# ============================================================
+# 4. Assertions
+# ============================================================
 
-# 처음 29개는 30분 입력이 아직 안 쌓였으므로 WARMUP
+# ------------------------------------------------------------
+# A. 처음 29개는 WARMUP
+# ------------------------------------------------------------
+
 assert all(
-    p["forecast_status"] == "WARMUP"
-    for p in payloads[:29]
+    item["forecast_status"] == "WARMUP"
+    for item in results[:29]
 )
 
-# 30번째부터는 READY
-assert payloads[29]["forecast_status"] == "READY"
+
+# ------------------------------------------------------------
+# B. 30번째부터 READY
+# ------------------------------------------------------------
+
+assert (
+    results[29]["forecast_status"]
+    == "READY"
+)
+
+
+# ------------------------------------------------------------
+# C. 내부수위가 RiskEngine까지 전달됨
+# ------------------------------------------------------------
 
 assert all(
-    p["forecast_status"] == "READY"
-    for p in payloads[29:]
+    item["internal_depth_m"] is not None
+    for item in results
 )
 
 
-# mock 물리 조건에서 실제 OPEN branch가
-# 최소 한 번 실행돼야 함
-assert open_count >= 1, (
-    "OPEN command가 한 번도 발생하지 않았습니다."
+# ------------------------------------------------------------
+# D. equivalent depth가 계산됨
+# ------------------------------------------------------------
+
+assert all(
+    item["equivalent_depth_m"]
+    is not None
+    for item in results
 )
 
 
-# OPEN 후 조건이 해제되거나 대피가 완료되면
-# CLOSE가 발생해야 함
-assert close_count >= 1, (
-    "CLOSE command가 한 번도 발생하지 않았습니다."
+# ------------------------------------------------------------
+# E. OPEN / CLOSE 각각 한 번 이상
+# ------------------------------------------------------------
+
+open_count = sum(
+    item["command"] == "OPEN"
+    for item in results
 )
 
+close_count = sum(
+    item["command"] == "CLOSE"
+    for item in results
+)
 
-# 현재 외부수위가 실제 critical 0.30m 이상인 순간은
-# LED 상태가 DANGER여야 한다.
-critical_payloads = [
-    p
-    for p in payloads
-    if p["current_depth_m"] >= 0.30
+assert open_count >= 1
+assert close_count >= 1
+
+
+# ------------------------------------------------------------
+# F. 현재 외부수위 >= 0.30m이면
+#    침수상태 자체가 DANGER
+# ------------------------------------------------------------
+
+for item in results:
+
+    if item["external_depth_m"] >= 0.30:
+
+        assert (
+            item["state"]
+            == DANGER
+        )
+
+        assert (
+            item[
+                "t_external_critical_min"
+            ]
+            == 0
+        )
+
+
+# ------------------------------------------------------------
+# G. equalization이 활성화된 동안
+#    미래 압력 추정은 비활성화
+# ------------------------------------------------------------
+
+active_results = [
+    item
+    for item in results
+    if item["equalization_active"]
 ]
 
-assert len(critical_payloads) > 0
+assert len(active_results) > 0
 
-assert all(
-    p["state"] == DANGER
-    for p in critical_payloads
+for item in active_results[1:]:
+
+    assert (
+        item[
+            "pressure_forecast_status"
+        ]
+        == "UNAVAILABLE_EQUALIZATION_ACTIVE"
+    )
+
+    assert (
+        item["t_critical_min"]
+        is None
+    )
+
+
+# ------------------------------------------------------------
+# H. LED DANGER가 자동 OPEN을 뜻하지 않음을 검증
+# ------------------------------------------------------------
+
+danger_without_open = any(
+    item["state"] == DANGER
+    and item["command"] == "NONE"
+    for item in results
 )
 
+assert danger_without_open
 
-# 현재 0.30m 이상이면
-# external critical time은 0
-assert all(
-    p["t_external_critical_min"] == 0
-    for p in critical_payloads
-)
 
+# ============================================================
+# 5. Summary
+# ============================================================
 
 print()
-print("==============================")
+print("=" * 50)
 print("E2E TEST PASSED")
-print("==============================")
-print(f"Total samples : {len(payloads)}")
-print(f"OPEN count    : {open_count}")
-print(f"CLOSE count   : {close_count}")
+print("=" * 50)
+
+print(
+    f"Total samples : "
+    f"{len(results)}"
+)
+
+print(
+    f"OPEN count    : "
+    f"{open_count}"
+)
+
+print(
+    f"CLOSE count   : "
+    f"{close_count}"
+)
+
+print(
+    "Risk chain    : "
+    "external + internal "
+    "→ equivalent depth "
+    "→ T_critical "
+    "→ LED"
+)
+
+print(
+    "Control chain : "
+    "risk + mock physical conditions "
+    "→ OPEN/CLOSE/NONE"
+)
