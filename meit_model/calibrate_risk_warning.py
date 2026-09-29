@@ -20,6 +20,11 @@ from meit_model.cv import (
 from meit_model.evaluate_lstm_cv import (
     load_checkpoint_model,
 )
+from meit_model.risk_policy import (
+    EXTERNAL_EVALUATION_SCOPE,
+    REPORT_SCHEMA_VERSION,
+    threshold_contract,
+)
 
 
 ACTUAL_CRITICAL_DEPTH_M = 0.30
@@ -987,8 +992,11 @@ def main():
 
         json.dump(
             {
-                "schema_version": 2,
+                "schema_version": REPORT_SCHEMA_VERSION,
                 "report_type": "window_calibration",
+                "evaluation_scope": EXTERNAL_EVALUATION_SCOPE,
+                "sealed_test_used": False,
+                "threshold_contract": threshold_contract(),
                 "data_fingerprint": fingerprint,
                 "cv_dir": str(args.cv_dir),
                 "model_dir": str(args.model_dir),

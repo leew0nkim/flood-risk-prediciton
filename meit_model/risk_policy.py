@@ -8,11 +8,31 @@ from pathlib import Path
 from meit_data.pipeline import sha256
 
 
-POLICY_SCHEMA_VERSION = 1
-REPORT_SCHEMA_VERSION = 2
+POLICY_SCHEMA_VERSION = 2
+REPORT_SCHEMA_VERSION = 3
 REQUIRED_LEAD_TIME_MIN = 5
 EXTERNAL_CRITICAL_DEPTH_M = .30
 PRESSURE_CRITICAL_EQUIVALENT_DEPTH_M = .30
+EXTERNAL_EVALUATION_SCOPE = "external_depth_forecast_crossing"
+PRESSURE_POLICY_SCOPE = "outside_higher_equivalent_depth"
+
+
+def threshold_contract():
+    """Return the two approved 0.30 m criteria without conflating them."""
+    return {
+        "external_crossing": {
+            "quantity": "external_depth_m",
+            "critical_threshold_m": EXTERNAL_CRITICAL_DEPTH_M,
+            "use": "LSTM forecast crossing evaluation",
+        },
+        "pressure_critical": {
+            "quantity": "equivalent_depth_m",
+            "critical_threshold_m": PRESSURE_CRITICAL_EQUIVALENT_DEPTH_M,
+            "direction": "OUTSIDE_HIGHER",
+            "use": "RiskEngine hydrostatic pressure policy",
+        },
+        "same_numeric_value_but_distinct_metrics": True,
+    }
 
 
 def read_json(path):
@@ -45,8 +65,14 @@ def validate_reports(window_report, event_report, fingerprint, threshold):
             raise ValueError(f"Unexpected {name} report type")
         if report.get("data_fingerprint") != fingerprint:
             raise ValueError(f"{name.capitalize()} was produced from different data")
+        if report.get("evaluation_scope") != EXTERNAL_EVALUATION_SCOPE:
+            raise ValueError(f"{name.capitalize()} must evaluate external-depth crossings")
+        if report.get("sealed_test_used") is not False:
+            raise ValueError(f"{name.capitalize()} must use development CV validation only")
         if report.get("actual_critical_depth_m") != EXTERNAL_CRITICAL_DEPTH_M:
             raise ValueError(f"{name.capitalize()} critical depth must be 0.30 m")
+        if report.get("threshold_contract") != threshold_contract():
+            raise ValueError(f"{name.capitalize()} threshold contract does not match the approved policy")
     if event_report.get("required_lead_time_min") != REQUIRED_LEAD_TIME_MIN:
         raise ValueError("Event evaluation must use a 5-minute required lead time")
     def evidence_hashes(report):
@@ -87,6 +113,9 @@ def create_policy_decision(window_path, event_path, fingerprint, threshold, sele
         "forecast_warning_depth_m": float(threshold),
         "external_critical_depth_m": EXTERNAL_CRITICAL_DEPTH_M,
         "pressure_critical_equivalent_depth_m": PRESSURE_CRITICAL_EQUIVALENT_DEPTH_M,
+        "threshold_contract": threshold_contract(),
+        "external_evaluation_scope": EXTERNAL_EVALUATION_SCOPE,
+        "pressure_policy_scope": PRESSURE_POLICY_SCOPE,
         "required_lead_time_min": REQUIRED_LEAD_TIME_MIN,
         "selection_basis": {
             "primary_metric": "operational_event_recall_at_5_min",
@@ -131,6 +160,9 @@ def load_policy_decision(decision_path, window_path, event_path, fingerprint):
     if (decision.get("required_lead_time_min") != REQUIRED_LEAD_TIME_MIN
             or decision.get("external_critical_depth_m") != EXTERNAL_CRITICAL_DEPTH_M
             or decision.get("pressure_critical_equivalent_depth_m")
-            != PRESSURE_CRITICAL_EQUIVALENT_DEPTH_M):
+            != PRESSURE_CRITICAL_EQUIVALENT_DEPTH_M
+            or decision.get("threshold_contract") != threshold_contract()
+            or decision.get("external_evaluation_scope") != EXTERNAL_EVALUATION_SCOPE
+            or decision.get("pressure_policy_scope") != PRESSURE_POLICY_SCOPE):
         raise ValueError("Risk policy constants do not match the approved contract")
     return decision

@@ -4,8 +4,8 @@
   "source_sha256": "9fb087622390b21a4aae6506ab08b8c92d6fd2335a4c95a290753800ec064aa1",
   "dataset_artifact_hashes": {
     "config.json": {
-      "bytes": 3922,
-      "sha256": "f1fb24e7d420114385ee1a08f813d2cfc11cc33806cb381299a0f145cb6b275d"
+      "bytes": 3894,
+      "sha256": "ea4891cc7751c29f26be75cf567f0908527a2e959d25f043c6ee53fe23223844"
     },
     "event_audit.csv": {
       "bytes": 790182,

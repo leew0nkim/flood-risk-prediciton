@@ -172,8 +172,8 @@ python -m meit_model.run_electronics_integration --mode accumulate --port COM3
 | `equivalent_depth_m`, `pressure_direction` | 등가수심 크기와 압력 우세 방향 |
 | `bottom_pressure_difference_pa` | 공통 문 하단에서의 압력 차, 문 전체 힘 아님 |
 | `pressure_status` | 부분 침수 가정의 계산 또는 자료 부족 상태 |
-| `pressure_critical_equivalent_depth_m` | 등가수심 잠정 경고 / 기획서 임계값 |
-| `t_external_warning_min`, `t_external_critical_min` | 기존 외부 0.29 / 0.30m 도달시간 |
+| `pressure_critical_equivalent_depth_m` | 압력 정책의 외부 우세 등가수심 critical 0.30m |
+| `t_external_warning_min`, `t_external_critical_min` | 선택된 외부 예측 경고수위 / 외부 crossing 0.30m 도달시간 |
 | `pressure_forecast_status` | CONDITIONAL_INTERNAL_CONSTANT 또는 UNAVAILABLE 계열 |
 | `t_pressure_critical_if_internal_constant_min` | 실내 수위 고정 조건에서 외부 우세 등가수심 0.30m 도달시간 |
 | `serial_input_error` | 가장 최근 파싱 오류; 다음 정상 패킷에서 해제 |

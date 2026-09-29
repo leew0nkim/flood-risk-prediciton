@@ -16,6 +16,11 @@ from meit_model.calibrate_risk_warning import collect_predictions
 from meit_model.cv import load_development_data, load_scaler
 from meit_model.evaluate_lstm_cv import load_checkpoint_model
 from meit_model.fold_scaling import checkpoint_data, data_fingerprint
+from meit_model.risk_policy import (
+    EXTERNAL_EVALUATION_SCOPE,
+    REPORT_SCHEMA_VERSION,
+    threshold_contract,
+)
 
 CRITICAL_DEPTH_M = 0.300
 HORIZON_MINUTES = 15
@@ -205,8 +210,11 @@ def main():
                       'scaler': scaler, 'checkpoint_epoch': checkpoint['epoch'], 'results': comparisons})
     output = args.output or args.model_dir / 'event_evaluation.json'
     payload = {
-        'schema_version': 2,
+        'schema_version': REPORT_SCHEMA_VERSION,
         'report_type': 'event_evaluation',
+        'evaluation_scope': EXTERNAL_EVALUATION_SCOPE,
+        'sealed_test_used': False,
+        'threshold_contract': threshold_contract(),
         'actual_critical_depth_m': CRITICAL_DEPTH_M,
         'cv_dir': str(args.cv_dir), 'model_dir': str(args.model_dir),
         'model_evidence': model_evidence, 'data_fingerprint': fingerprint,

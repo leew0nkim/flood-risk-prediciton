@@ -11,6 +11,8 @@ from meit_data.pipeline import sha256
 from meit_model.fold_scaling import FoldScalerSource, rescale_data, indices_digest
 
 from meit_model.cv import (
+    CV_SCHEMA_VERSION,
+    DEFAULT_CRITICAL_DEPTH_M,
     load_development_data,
     load_scaler,
 )
@@ -484,8 +486,17 @@ def main():
         cv_summary = json.loads(cv_summary_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         parser.error(f"Cannot read CV summary: {exc}")
-    if (cv_summary.get("schema_version") != 2
-            or cv_summary.get("data_fingerprint") != scaling_source.fingerprint):
+    cv_critical_depth = cv_summary.get("critical_depth_m")
+    if (cv_summary.get("schema_version") != CV_SCHEMA_VERSION
+            or cv_summary.get("data_fingerprint") != scaling_source.fingerprint
+            or cv_summary.get("evaluation_scope") != "development_only"
+            or cv_summary.get("sealed_test_used") is not False
+            or cv_summary.get("critical_threshold_role") != "external_depth_crossing"
+            or isinstance(cv_critical_depth, bool)
+            or not isinstance(cv_critical_depth, (int, float))
+            or not np.isfinite(cv_critical_depth)
+            or not np.isclose(cv_critical_depth, DEFAULT_CRITICAL_DEPTH_M,
+                              rtol=0., atol=1e-12)):
         parser.error("CV split summary does not match the current preprocessing artifacts")
     cv_fold_records = {row.get("fold"): row for row in cv_summary.get("folds", [])
                        if isinstance(row, dict)}
@@ -582,8 +593,11 @@ def main():
 
         json.dump(
             {
-                "schema_version": 2,
+                "schema_version": CV_SCHEMA_VERSION,
                 "data_fingerprint": scaling_source.fingerprint,
+                "evaluation_scope": "development_cv_validation",
+                "sealed_test_used": False,
+                "critical_threshold_role": "external_depth_crossing",
                 "cv_split_summary_sha256": cv_split_summary_sha256,
                 "seed": config["seed"],
                 "config": config,

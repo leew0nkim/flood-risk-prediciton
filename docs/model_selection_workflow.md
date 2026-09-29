@@ -1,7 +1,9 @@
 # Risk-aware LSTM selection workflow
 
 All selection uses development data only. Do not run or inspect either sealed
-test split until the CV epoch recipe and warning policy are locked.
+test split until the CV epoch recipe and warning policy are locked. Schema 3
+reports explicitly record `sealed_test_used=false` and distinguish the external
+depth crossing criterion from the pressure equivalent-depth policy.
 
 1. Generate CV folds in a new empty directory. `cv_summary.json` records the
    preprocessing fingerprint and each fold file's SHA-256.
@@ -65,4 +67,11 @@ python -m meit_model.train_final_risk_lstm \
 The external warning threshold in the locked policy is diagnostic for the
 external forecast and is loaded into live RiskEngine. It does not replace
 `pressure_critical_equivalent_depth_m=0.30`, which remains the separate
-hydrostatic policy threshold.
+hydrostatic policy threshold. External crossing critical depth is also 0.30m;
+the equal numeric values refer to different measured quantities and their
+results must be reported separately.
+
+Keep prior datasets, CV reports, calibration reports and checkpoints under
+their original run directories with their fingerprints. They remain historical
+results for that data version, but schema 3 and fingerprint checks prevent them
+from supporting or entering the new canonical final training run.

@@ -12,6 +12,7 @@ import torch
 
 from meit_data.pipeline import sha256
 from meit_model.cv import load_development_data, load_scaler
+from meit_model.cv import CV_SCHEMA_VERSION, DEFAULT_CRITICAL_DEPTH_M
 from meit_model.fold_scaling import FoldScalerSource, rescale_data, indices_digest
 from meit_model.lstm import LSTMForecaster
 from meit_model.predictor import ForecastPredictor
@@ -51,10 +52,22 @@ def derive_training_recipe(cv_summary_paths, policy_decision_path,
     best_epochs = []
     cv_split_hashes = []
     for path, summary in zip(cv_summary_paths, summaries):
-        if summary.get('schema_version') != 2:
+        if summary.get('schema_version') != CV_SCHEMA_VERSION:
             raise ValueError(f'Legacy CV summary is not accepted: {path}')
         if summary.get('data_fingerprint') != fingerprint:
             raise ValueError(f'CV summary was produced from different data: {path}')
+        if (summary.get('evaluation_scope') != 'development_cv_validation'
+                or summary.get('sealed_test_used') is not False
+                or summary.get('critical_threshold_role') != 'external_depth_crossing'):
+            raise ValueError(f'CV summary did not use development-only external crossing evaluation: {path}')
+        config = summary.get('config')
+        critical_depth = config.get('critical_depth_m') if isinstance(config, dict) else None
+        if (isinstance(critical_depth, bool)
+                or not isinstance(critical_depth, (int, float))
+                or not math.isfinite(critical_depth)
+                or not math.isclose(critical_depth, DEFAULT_CRITICAL_DEPTH_M,
+                                    rel_tol=0., abs_tol=1e-12)):
+            raise ValueError(f'CV summary critical depth must be 0.30 m: {path}')
         seed = summary.get('seed')
         if seed in seeds:
             raise ValueError(f'Duplicate CV seed {seed}: {path}')

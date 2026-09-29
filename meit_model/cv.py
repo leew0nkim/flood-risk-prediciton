@@ -26,6 +26,7 @@ HORIZON_MINUTES = 15
 
 # 팀에서 새로 정한 위험 임계수심
 DEFAULT_CRITICAL_DEPTH_M = 0.30
+CV_SCHEMA_VERSION = 3
 
 
 @dataclass
@@ -606,6 +607,9 @@ def main():
 
     args = parser.parse_args()
 
+    if not np.isclose(args.critical_depth, DEFAULT_CRITICAL_DEPTH_M, rtol=0., atol=1e-12):
+        parser.error("The canonical external crossing criterion is fixed at 0.30 m")
+
     # --------------------------------------------------------
     # 1. Development data
     # --------------------------------------------------------
@@ -819,8 +823,11 @@ def main():
 
         json.dump(
             {
-                "schema_version": 2,
+                "schema_version": CV_SCHEMA_VERSION,
                 "data_fingerprint": fingerprint,
+                "evaluation_scope": "development_only",
+                "sealed_test_used": False,
+                "critical_threshold_role": "external_depth_crossing",
                 "n_splits": args.n_splits,
                 "initial_train_fraction": args.initial_train_fraction,
                 "critical_depth_m": args.critical_depth,
