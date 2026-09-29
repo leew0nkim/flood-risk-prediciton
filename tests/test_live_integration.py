@@ -12,14 +12,21 @@ def packet(out=.2, inside=0., active=False):
 
 
 class LiveIntegrationTests(unittest.TestCase):
-    def test_jitter_checkpoint_inference_once_per_completed_bin(self):
+    def predictor(self):
         predictor = Mock()
+        predictor.forecast_warning_depth_m = .29
+        return predictor
+
+    def test_jitter_checkpoint_inference_once_per_completed_bin(self):
+        predictor = self.predictor()
         predictor.predict.return_value = ForecastResult('READY', [.2] * 15, None)
         session = IntegrationSession('live', config(), 0, predictor=predictor)
         session.update(packet(.1), 0)
         for second in range(1, 1801):
             result = session.update(packet(second / 10000), second + .001)
         self.assertEqual(result['prediction_source'], 'lstm')
+        self.assertEqual(result['forecast_warning_depth_m'], .29)
+        self.assertEqual(result['forecast_warning_policy_status'], 'LOCKED_FROM_CHECKPOINT')
         self.assertEqual(result['forecast_status'], 'READY')
         predictor.predict.assert_called_once()
         values = predictor.predict.call_args.args[0]
@@ -39,7 +46,7 @@ class LiveIntegrationTests(unittest.TestCase):
         self.assertEqual(recovered['command'], 'NONE')
 
     def test_inference_error_preserves_current_flood_and_is_cached(self):
-        predictor = Mock()
+        predictor = self.predictor()
         predictor.predict.return_value = ForecastResult('PREDICTION_ERROR', None, None)
         session = IntegrationSession('live', config(), 0, predictor=predictor)
         for second in range(0, 1801, 60):
@@ -50,8 +57,14 @@ class LiveIntegrationTests(unittest.TestCase):
         predictor.predict.assert_called_once()
 
     def test_no_sensor_never_calls_model(self):
-        predictor = Mock()
+        predictor = self.predictor()
         result = IntegrationSession('live', config(), 0, predictor=predictor).update(None, 2000)
         predictor.predict.assert_not_called()
         self.assertEqual(result['state'], 'WARNING')
         self.assertIsNone(result['t_critical_min'])
+
+    def test_live_mode_rejects_unlocked_cv_predictor(self):
+        predictor = Mock()
+        predictor.forecast_warning_depth_m = None
+        with self.assertRaisesRegex(ValueError, 'locked warning policy'):
+            IntegrationSession('live', config(), 0, predictor=predictor)

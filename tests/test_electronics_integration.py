@@ -48,6 +48,8 @@ class ElectronicsTests(unittest.TestCase):
             self.assertEqual(result['forecast_status'], 'READY')
             self.assertEqual(result['history_status'], 'BYPASSED')
             self.assertEqual(result['prediction_source'], 'mock')
+            self.assertEqual(result['forecast_warning_depth_m'], .30)
+            self.assertEqual(result['forecast_warning_policy_status'], 'PROVISIONAL_UNCALIBRATED')
             self.assertEqual(result['received_sensor_depth_m'], .5)
             self.assertEqual(result['current_depth_m'], .2)
             self.assertEqual(result['t_external_critical_min'], crossing)

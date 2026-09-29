@@ -49,6 +49,26 @@ class ForecastPredictor:
             weights_only=True,
         )
 
+        # A final deployment checkpoint carries the reviewed external warning
+        # threshold. CV checkpoints intentionally have no runtime policy.
+        self.policy = checkpoint.get("policy")
+        self.forecast_warning_depth_m = None
+        if self.policy is not None:
+            if not isinstance(self.policy, dict):
+                raise ValueError("Checkpoint policy must be an object")
+            threshold = self.policy.get("forecast_warning_depth_m")
+            if (isinstance(threshold, bool) or not isinstance(threshold, (int, float))
+                    or not math.isfinite(threshold) or not 0 < threshold <= .30):
+                raise ValueError("Checkpoint has an invalid external warning threshold")
+            if (self.policy.get("status") != "LOCKED_FOR_FINAL_TRAINING"
+                    or self.policy.get("data_fingerprint") != checkpoint.get("data_fingerprint")):
+                raise ValueError("Checkpoint runtime policy is not locked to its training data")
+            if (self.policy.get("external_critical_depth_m") != .30
+                    or self.policy.get("pressure_critical_equivalent_depth_m") != .30
+                    or self.policy.get("required_lead_time_min") != 5):
+                raise ValueError("Checkpoint policy constants do not match the runtime contract")
+            self.forecast_warning_depth_m = float(threshold)
+
         # -----------------------------------------------
         # 1. scaler
         # -----------------------------------------------

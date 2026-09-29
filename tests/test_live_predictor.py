@@ -40,9 +40,18 @@ class PredictorTests(unittest.TestCase):
             model=LSTMForecaster(hidden_size=8,num_layers=2)
             for parameter in model.parameters(): parameter.data.zero_()
             model.output_layer.bias.data.fill_(2)
+            fingerprint={'train.npz':'current'}
+            policy={'status':'LOCKED_FOR_FINAL_TRAINING',
+                    'data_fingerprint':fingerprint,
+                    'forecast_warning_depth_m':.29,
+                    'external_critical_depth_m':.30,
+                    'pressure_critical_equivalent_depth_m':.30,
+                    'required_lead_time_min':5}
             torch.save({'config':{'hidden_size':8,'num_layers':2,'input_size':1,'horizon':15},
-                        'scaler':{'mean_m':.1,'std_m':.2},'model_state_dict':model.state_dict()},path)
+                        'scaler':{'mean_m':.1,'std_m':.2},'model_state_dict':model.state_dict(),
+                        'data_fingerprint':fingerprint,'policy':policy},path)
             predictor=ForecastPredictor(path,device='cpu')
+            self.assertEqual(predictor.forecast_warning_depth_m,.29)
             result=predictor.predict([.2]*30)
             self.assertEqual(result.status,'READY')
             self.assertTrue(all(abs(x-.5)<1e-6 for x in result.predicted_depths_m))

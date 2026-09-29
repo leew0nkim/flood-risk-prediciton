@@ -46,6 +46,13 @@ Legacy constructor fields (including t_warning_min) remain for controller/caller
 compatibility. t_pressure_critical_if_internal_constant_min mirrors t_critical_min.
 Properties are not included by dataclasses.asdict; explicitly serialize new names.
 
+RiskEngine's default external forecast threshold is 0.30m only as an
+uncalibrated mock/offline fallback. A live session refuses a CV checkpoint or
+any checkpoint without a locked policy. Final training stores the reviewed
+external warning threshold in the checkpoint; live runtime constructs
+RiskEngine with that same value. The separate pressure equivalent-depth
+critical threshold remains 0.30m.
+
 Previous external-threshold event scores do not measure this new LED policy.
 Evaluate it separately with paired indoor/outdoor scenarios. quick/accumulate
 remain mock tests; this change does not add a live LSTM runner. command stays NONE.

@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_data.pipeline import sha256
 from meit_model.calibrate_risk_warning import collect_predictions
 from meit_model.cv import load_development_data, load_scaler
 from meit_model.evaluate_lstm_cv import load_checkpoint_model
@@ -139,7 +140,8 @@ def main():
     parser.add_argument('--output', type=Path,
                         help='Result JSON (default: <model-dir>/event_evaluation.json)')
     parser.add_argument('--folds', type=int, nargs='+', default=[1, 2, 3, 4])
-    parser.add_argument('--warning-thresholds', type=float, nargs='+', default=[.295, .290, .285])
+    parser.add_argument('--warning-thresholds', type=float, nargs='+',
+                        default=[.300, .295, .290, .285, .280])
     parser.add_argument('--batch-size', type=int, default=128)
     args = parser.parse_args()
     if args.required_lead_time_min is not None and (
@@ -169,7 +171,7 @@ def main():
     fingerprint = data_fingerprint(args.data_dir)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     pooled = {t: [] for t in args.warning_thresholds}
-    folds, seen_events = [], set()
+    folds, seen_events, model_evidence = [], set(), []
     for number in args.folds:
         with np.load(args.cv_dir / f'fold_{number}.npz', allow_pickle=False) as fold:
             indices = fold['val_indices']
@@ -179,8 +181,10 @@ def main():
         if event_set & seen_events:
             raise ValueError('Validation events occur in multiple folds; cannot pool event recall')
         seen_events.update(event_set)
-        model, checkpoint = load_checkpoint_model(
-            args.model_dir / f'fold_{number}/best_model.pt', device)
+        checkpoint_path = args.model_dir / f'fold_{number}/best_model.pt'
+        model, checkpoint = load_checkpoint_model(checkpoint_path, device)
+        model_evidence.append({'fold': number, 'checkpoint': str(checkpoint_path),
+                               'sha256': sha256(checkpoint_path)})
         if checkpoint.get('fold') != number:
             raise ValueError('Checkpoint fold number mismatch')
         fold_data, scaler = checkpoint_data(data, source_scaler, checkpoint, fingerprint, indices)
@@ -201,8 +205,11 @@ def main():
                       'scaler': scaler, 'checkpoint_epoch': checkpoint['epoch'], 'results': comparisons})
     output = args.output or args.model_dir / 'event_evaluation.json'
     payload = {
+        'schema_version': 2,
+        'report_type': 'event_evaluation',
         'actual_critical_depth_m': CRITICAL_DEPTH_M,
-        'model_dir': str(args.model_dir), 'data_fingerprint': fingerprint,
+        'cv_dir': str(args.cv_dir), 'model_dir': str(args.model_dir),
+        'model_evidence': model_evidence, 'data_fingerprint': fingerprint,
         'protocol': 'first observed future crossing in validation windows; alarm origin in preceding 15 minutes including crossing; current depth below critical',
         'limitations': ['Not full raw-event first crossings; missing/unrepresented labels may hide earlier crossings.',
                         'Non-crossing and unobservable events excluded; no event-level false alarm rate.',

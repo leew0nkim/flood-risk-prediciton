@@ -10,10 +10,12 @@ from statistics import median
 import numpy as np
 import torch
 
+from meit_data.pipeline import sha256
 from meit_model.cv import load_development_data, load_scaler
 from meit_model.fold_scaling import FoldScalerSource, rescale_data, indices_digest
 from meit_model.lstm import LSTMForecaster
 from meit_model.predictor import ForecastPredictor
+from meit_model.risk_policy import load_policy_decision, read_json
 from meit_model.train_lstm_cv import CVDataset, make_event_balanced_loader, set_seed
 from meit_model.train_risk_lstm_cv import train_one_epoch_risk
 
@@ -41,18 +43,13 @@ def write_json(path, value):
                                default=json_default), encoding='utf-8')
 
 
-def read_json(path):
-    try:
-        return json.loads(Path(path).read_text(encoding='utf-8'))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError(f'Cannot read valid JSON from {path}: {exc}') from exc
-
-
-def derive_training_recipe(cv_summary_paths, calibration_path, fingerprint):
+def derive_training_recipe(cv_summary_paths, policy_decision_path,
+                           window_calibration_path, event_evaluation_path, fingerprint):
     """Build the final recipe only from artifacts for the current dataset."""
     summaries = [read_json(path) for path in cv_summary_paths]
     seeds = []
     best_epochs = []
+    cv_split_hashes = []
     for path, summary in zip(cv_summary_paths, summaries):
         if summary.get('schema_version') != 2:
             raise ValueError(f'Legacy CV summary is not accepted: {path}')
@@ -62,6 +59,10 @@ def derive_training_recipe(cv_summary_paths, calibration_path, fingerprint):
         if seed in seeds:
             raise ValueError(f'Duplicate CV seed {seed}: {path}')
         seeds.append(seed)
+        split_hash = summary.get('cv_split_summary_sha256')
+        if not isinstance(split_hash, str) or len(split_hash) != 64:
+            raise ValueError(f'CV summary has no split-manifest SHA-256: {path}')
+        cv_split_hashes.append(split_hash)
         folds = summary.get('folds')
         if not isinstance(folds, list) or len(folds) != 4:
             raise ValueError(f'CV summary must contain four folds: {path}')
@@ -72,19 +73,12 @@ def derive_training_recipe(cv_summary_paths, calibration_path, fingerprint):
             best_epochs.append(epoch)
     if tuple(sorted(seeds)) != REQUIRED_CV_SEEDS:
         raise ValueError('Final recipe requires CV summaries for seeds 42, 43 and 44')
+    if len(set(cv_split_hashes)) != 1:
+        raise ValueError('CV seed runs used different fold definitions')
 
-    calibration = read_json(calibration_path)
-    if calibration.get('schema_version') != 2:
-        raise ValueError('Legacy calibration output is not accepted')
-    if calibration.get('data_fingerprint') != fingerprint:
-        raise ValueError('Calibration was produced from different data')
-    if calibration.get('actual_critical_depth_m') != .30:
-        raise ValueError('Calibration critical depth must be 0.30 m')
-    selection = calibration.get('selection')
-    threshold = selection.get('selected_threshold_m') if isinstance(selection, dict) else None
-    if (isinstance(threshold, bool) or not isinstance(threshold, (int, float))
-            or not math.isfinite(threshold) or not 0 < threshold <= .30):
-        raise ValueError('Calibration has no valid selected warning threshold')
+    decision = load_policy_decision(
+        policy_decision_path, window_calibration_path, event_evaluation_path, fingerprint)
+    threshold = decision['forecast_warning_depth_m']
 
     # Round .5 upward. Python round() uses bankers' rounding and would turn
     # an 18.5-epoch median into 18 instead of the intended 19.
@@ -94,10 +88,18 @@ def derive_training_recipe(cv_summary_paths, calibration_path, fingerprint):
         'forecast_warning_depth_m': float(threshold),
         'cv_seeds': sorted(seeds),
         'cv_best_epochs': best_epochs,
+        'cv_split_summary_sha256': cv_split_hashes[0],
         'cv_summary_paths': [str(path) for path in cv_summary_paths],
-        'calibration_path': str(calibration_path),
+        'cv_summary_sha256': [sha256(path) for path in cv_summary_paths],
+        'policy_decision_path': str(policy_decision_path),
+        'policy_decision_sha256': sha256(policy_decision_path),
+        'window_calibration_path': str(window_calibration_path),
+        'window_calibration_sha256': sha256(window_calibration_path),
+        'event_evaluation_path': str(event_evaluation_path),
+        'event_evaluation_sha256': sha256(event_evaluation_path),
         'epoch_selection_rule': 'median of 12 validation best epochs, rounded .5 upward',
-        'warning_threshold_selection_rule': selection.get('rule'),
+        'warning_threshold_selection_rule': decision['selection_basis'],
+        'policy_decision': decision,
     }
 
 
@@ -107,8 +109,10 @@ def main(argv=None):
     parser.add_argument('--output-dir', type=Path, default=Path('artifacts/final_model'))
     parser.add_argument('--cv-summary', type=Path, action='append', required=True,
                         help='Repeat for the seed 42, 43 and 44 CV summaries')
-    parser.add_argument('--calibration', type=Path, required=True,
-                        help='Validation-only warning-threshold calibration JSON')
+    parser.add_argument('--policy-decision', type=Path, required=True,
+                        help='Locked, human-reviewed warning-threshold policy JSON')
+    parser.add_argument('--window-calibration', type=Path, required=True)
+    parser.add_argument('--event-evaluation', type=Path, required=True)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args(argv)
     if args.seed != 42:
@@ -123,7 +127,9 @@ def main(argv=None):
     indices = np.arange(len(data.X), dtype=np.int64)
     source = FoldScalerSource(args.data_dir)
     try:
-        recipe = derive_training_recipe(args.cv_summary, args.calibration, source.fingerprint)
+        recipe = derive_training_recipe(
+            args.cv_summary, args.policy_decision, args.window_calibration,
+            args.event_evaluation, source.fingerprint)
     except ValueError as exc:
         parser.error(str(exc))
     epochs = recipe['epochs']
@@ -131,9 +137,8 @@ def main(argv=None):
                   horizon=15, batch_size=128, learning_rate=.001, gradient_clip=1.,
                   critical_depth_m=.300, underprediction_weight=2.,
                   max_epochs=epochs, seed=args.seed, normalization_version=2)
-    policy = dict(forecast_warning_depth_m=recipe['forecast_warning_depth_m'],
-                  pressure_critical_equivalent_depth_m=.300,
-                  required_lead_time_min=5, danger_horizon_min=5)
+    policy = dict(recipe['policy_decision'])
+    policy['danger_horizon_min'] = 5
     scaler = source.fit(indices)
     scaler['scope'] = 'full_development_training_inputs_only'
     scaled = rescale_data(data, load_scaler(args.data_dir), scaler)
@@ -148,7 +153,14 @@ def main(argv=None):
         epoch_selection_rule=recipe['epoch_selection_rule'],
         warning_threshold_selection_rule=recipe['warning_threshold_selection_rule'],
         cv_seeds=recipe['cv_seeds'], cv_best_epochs=recipe['cv_best_epochs'],
-        cv_summary_paths=recipe['cv_summary_paths'], calibration_path=recipe['calibration_path'],
+        cv_split_summary_sha256=recipe['cv_split_summary_sha256'],
+        cv_summary_paths=recipe['cv_summary_paths'], cv_summary_sha256=recipe['cv_summary_sha256'],
+        policy_decision_path=recipe['policy_decision_path'],
+        policy_decision_sha256=recipe['policy_decision_sha256'],
+        window_calibration_path=recipe['window_calibration_path'],
+        window_calibration_sha256=recipe['window_calibration_sha256'],
+        event_evaluation_path=recipe['event_evaluation_path'],
+        event_evaluation_sha256=recipe['event_evaluation_sha256'],
         deployment_recipe_applied=True,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -183,9 +195,11 @@ def main(argv=None):
     if result.status != 'READY':
         raise RuntimeError(f'Saved predictor smoke failed: {result.status}; {result.message}')
     pending.replace(checkpoint_path)
+    checkpoint_sha256 = sha256(checkpoint_path)
     write_json(args.output_dir / 'training_summary.json',
                dict(**provenance, training_epochs=epochs, seed=args.seed,
-                    checkpoint=str(checkpoint_path), predictor_smoke_status=result.status))
+                    checkpoint=str(checkpoint_path), checkpoint_sha256=checkpoint_sha256,
+                    predictor_smoke_status=result.status))
     print(f'FINAL TRAINING COMPLETE: {checkpoint_path}', flush=True)
     return 0
 

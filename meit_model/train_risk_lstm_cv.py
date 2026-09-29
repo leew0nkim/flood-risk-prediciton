@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_data.pipeline import sha256
 from meit_model.fold_scaling import FoldScalerSource, rescale_data, indices_digest
 
 from meit_model.cv import (
@@ -478,6 +479,18 @@ def main():
 
     scaling_source = FoldScalerSource(args.data_dir)
 
+    cv_summary_path = args.cv_dir / "cv_summary.json"
+    try:
+        cv_summary = json.loads(cv_summary_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        parser.error(f"Cannot read CV summary: {exc}")
+    if (cv_summary.get("schema_version") != 2
+            or cv_summary.get("data_fingerprint") != scaling_source.fingerprint):
+        parser.error("CV split summary does not match the current preprocessing artifacts")
+    cv_fold_records = {row.get("fold"): row for row in cv_summary.get("folds", [])
+                       if isinstance(row, dict)}
+    cv_split_summary_sha256 = sha256(cv_summary_path)
+
     args.output_dir.mkdir(
         parents=True,
         exist_ok=True,
@@ -513,6 +526,10 @@ def main():
             raise FileNotFoundError(
                 fold_path
             )
+        record = cv_fold_records.get(fold_number, {}).get("artifact", {})
+        if (record.get("path") != fold_path.name
+                or record.get("sha256") != sha256(fold_path)):
+            raise ValueError(f"CV fold {fold_number} does not match cv_summary.json")
 
         with np.load(
             fold_path,
@@ -535,6 +552,7 @@ def main():
         fold_data = rescale_data(data, scaler, fold_scaler)
         provenance = {
             "data_fingerprint": scaling_source.fingerprint,
+            "cv_split_summary_sha256": cv_split_summary_sha256,
             "train_indices_sha256": indices_digest(train_indices),
             "val_indices_sha256": indices_digest(val_indices),
         }
@@ -566,6 +584,7 @@ def main():
             {
                 "schema_version": 2,
                 "data_fingerprint": scaling_source.fingerprint,
+                "cv_split_summary_sha256": cv_split_summary_sha256,
                 "seed": config["seed"],
                 "config": config,
                 "folds": results,

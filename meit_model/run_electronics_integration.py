@@ -14,7 +14,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode', choices=('live', 'quick', 'accumulate'), default='live')
     parser.add_argument('--port', default='COM3', help='Serial port, e.g. COM3 or /dev/cu.usbmodem...')
-    parser.add_argument('--checkpoint', type=Path, default=Path('artifacts/risk_lstm_cv_v2/fold_1/best_model.pt'))
+    parser.add_argument('--checkpoint', type=Path, default=Path('artifacts/final_model/final_model.pt'))
     parser.add_argument('--baudrate', type=int, default=9600)
     parser.add_argument('--scenario', choices=('cycle', 'safe', 'warning', 'danger', 'equalized', 'inside-high'), default='cycle')
     parser.add_argument('--scenario-seconds', type=float, default=5)

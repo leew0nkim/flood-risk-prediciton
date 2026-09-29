@@ -38,7 +38,14 @@ class IntegrationSession:
         self.input_result = None
         self.history_bins = 0
         self.observed_bins = 0
-        self.risk = RiskEngine()
+        if mode == 'live':
+            threshold = getattr(predictor, 'forecast_warning_depth_m', None)
+            if threshold is None:
+                raise ValueError('Live mode requires a final checkpoint with a locked warning policy')
+            self.risk = RiskEngine(forecast_warning_depth_m=threshold)
+        else:
+            # Mock modes use the uncalibrated 0.30 m fallback.
+            self.risk = RiskEngine()
 
     def update(self, packet, now):
         if not math.isfinite(now) or now < self.last_now:
@@ -161,5 +168,8 @@ class IntegrationSession:
                       'equivalent_depth_m', 'bottom_pressure_difference_pa', 'pressure_direction'):
             payload[field] = getattr(evaluated, field) if evaluated and fresh else None
         payload['t_critical_min'] = evaluated.t_critical_min if evaluated and fresh else None
+        payload['forecast_warning_depth_m'] = self.risk.forecast_warning_depth_m
+        payload['forecast_warning_policy_status'] = (
+            'LOCKED_FROM_CHECKPOINT' if self.mode == 'live' else 'PROVISIONAL_UNCALIBRATED')
         payload['pressure_critical_equivalent_depth_m'] = self.risk.pressure_critical_equivalent_depth_m
         return payload

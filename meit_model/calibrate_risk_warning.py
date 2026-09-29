@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_data.pipeline import sha256
 from meit_model.fold_scaling import checkpoint_data, data_fingerprint
 
 from meit_data.torch_data import depth_to_m
@@ -30,27 +31,6 @@ DEFAULT_ALARM_THRESHOLDS = [
     0.285,
     0.280,
 ]
-
-
-def select_warning_threshold(sweep_results):
-    """Select a deterministic, safety-first operating point on validation data."""
-    candidates = [item for item in sweep_results
-                  if item["pooled"]["timely_recall"] is not None]
-    if not candidates:
-        raise ValueError("No threshold has an evaluable timely-recall result")
-
-    def score(item):
-        pooled = item["pooled"]
-        return (
-            pooled["timely_recall"],
-            pooled["recall"] if pooled["recall"] is not None else -1.,
-            -(pooled["false_positive_rate"]
-              if pooled["false_positive_rate"] is not None else 1.),
-            pooled["precision"] if pooled["precision"] is not None else -1.,
-            item["alarm_threshold_m"],
-        )
-
-    return max(candidates, key=score)
 
 
 def safe_divide(
@@ -661,6 +641,7 @@ def main():
     # ========================================================
 
     fold_predictions = {}
+    model_evidence = []
 
     for fold_number in range(
         1,
@@ -691,6 +672,11 @@ def main():
             checkpoint_path,
             device,
         )
+        model_evidence.append({
+            "fold": fold_number,
+            "checkpoint": str(checkpoint_path),
+            "sha256": sha256(checkpoint_path),
+        })
 
         fold_data, fold_scaler = checkpoint_data(
             data, scaler, checkpoint, fingerprint, val_indices
@@ -993,7 +979,6 @@ def main():
         exist_ok=True,
     )
 
-    selected = select_warning_threshold(sweep_results)
     with open(
         args.output,
         "w",
@@ -1003,19 +988,13 @@ def main():
         json.dump(
             {
                 "schema_version": 2,
+                "report_type": "window_calibration",
                 "data_fingerprint": fingerprint,
+                "cv_dir": str(args.cv_dir),
+                "model_dir": str(args.model_dir),
+                "model_evidence": model_evidence,
                 "actual_critical_depth_m":
                     ACTUAL_CRITICAL_DEPTH_M,
-
-                "selection": {
-                    "selected_threshold_m": selected["alarm_threshold_m"],
-                    "rule": (
-                        "validation_only lexicographic: maximize timely recall, "
-                        "then recall, minimize false-positive rate, maximize "
-                        "precision, then prefer the highest threshold"
-                    ),
-                    "pooled_metrics": selected["pooled"],
-                },
 
                 "lstm_threshold_sweep":
                     sweep_results,

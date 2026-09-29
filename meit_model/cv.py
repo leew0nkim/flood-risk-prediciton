@@ -9,7 +9,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from meit_data.pipeline import sha256
 from meit_data.torch_data import depth_to_m
+from meit_model.fold_scaling import data_fingerprint
 
 
 # ============================================================
@@ -615,6 +617,7 @@ def main():
     scaler = load_scaler(
         args.data_dir
     )
+    fingerprint = data_fingerprint(args.data_dir)
 
     print(
         "Development samples:",
@@ -639,6 +642,8 @@ def main():
         ),
     )
 
+    if args.output_dir.exists() and any(args.output_dir.iterdir()):
+        parser.error("CV output directory is not empty; choose a new directory")
     args.output_dir.mkdir(
         parents=True,
         exist_ok=True,
@@ -741,9 +746,9 @@ def main():
         # 이 indices는 나중에
         # ConcatDataset([train, validation])
         # 에 그대로 사용 가능
+        fold_output = args.output_dir / f"fold_{fold.fold_number}.npz"
         np.savez_compressed(
-            args.output_dir
-            / f"fold_{fold.fold_number}.npz",
+            fold_output,
 
             train_indices=(
                 fold.train_indices
@@ -753,6 +758,10 @@ def main():
                 fold.val_indices
             ),
         )
+        summary["artifact"] = {
+            "path": fold_output.name,
+            "sha256": sha256(fold_output),
+        }
 
         print(
             "\n"
@@ -809,7 +818,14 @@ def main():
     ) as f:
 
         json.dump(
-            summaries,
+            {
+                "schema_version": 2,
+                "data_fingerprint": fingerprint,
+                "n_splits": args.n_splits,
+                "initial_train_fraction": args.initial_train_fraction,
+                "critical_depth_m": args.critical_depth,
+                "folds": summaries,
+            },
             f,
             ensure_ascii=False,
             indent=2,
