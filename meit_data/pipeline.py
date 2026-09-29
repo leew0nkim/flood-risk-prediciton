@@ -116,6 +116,22 @@ def sample_metadata(windows, split, events, config):
     })
 
 
+def select_risk_dates(crossing_events_by_date, settings):
+    """Select one deterministic date from each chronological candidate stratum."""
+    dates = sorted(crossing_events_by_date)
+    stratum_count = settings["minimum_dates"]
+    if len(dates) < stratum_count:
+        raise ValueError("Too few candidate dates for chronology-stratified risk selection")
+    strata = np.array_split(np.asarray(dates, dtype=object), stratum_count)
+
+    def hash_order(date):
+        value = f"{settings['seed']}:{utc_string(date)}"
+        return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+    selected = [min(stratum.tolist(), key=hash_order) for stratum in strata]
+    return selected, [[utc_string(date) for date in stratum] for stratum in strata]
+
+
 def assign_risk_holdout(events, config, manifest):
     """Move complete UTC start dates from temporal train into a fixed risk test.
 
@@ -145,7 +161,13 @@ def assign_risk_holdout(events, config, manifest):
             crossing_events_by_date.setdefault(date, []).append(event.event_index)
     if not crossing_events_by_date:
         raise ValueError("No evaluable from-below threshold crossings available for risk test")
+    expected_dates, chronological_strata = select_risk_dates(crossing_events_by_date, settings)
     selected_dates = {pd.Timestamp(value) for value in settings["selected_dates_utc"]}
+    if selected_dates != set(expected_dates):
+        raise ValueError(
+            "Configured risk dates differ from chronology-stratified SHA-256 selection: "
+            f"expected {[utc_string(date) for date in expected_dates]}"
+        )
     if not selected_dates.issubset(crossing_events_by_date):
         missing = sorted(utc_string(date) for date in selected_dates - crossing_events_by_date.keys())
         raise ValueError(f"Configured risk dates lack evaluable crossings in temporal train: {missing}")
@@ -166,8 +188,15 @@ def assign_risk_holdout(events, config, manifest):
         item["exclusion_reason"] = event.split_reason
     manifest["risk_test"] = {
         **settings,
+        "critical_threshold_m": threshold,
         "candidate_dates_with_evaluable_crossings": len(crossing_events_by_date),
         "candidate_crossing_events": sum(map(len, crossing_events_by_date.values())),
+        "candidate_dates_utc": [utc_string(date) for date in sorted(crossing_events_by_date)],
+        "selection_procedure": {
+            "chronological_strata": len(chronological_strata),
+            "candidate_dates_by_stratum": chronological_strata,
+            "choice_within_each_stratum": "lowest sha256(seed:UTC-date)",
+        },
         "selected_dates_utc": [utc_string(date) for date in sorted(selected_dates)],
         "selected_event_count": len(moved),
         "selected_crossing_event_count": selected_crossings,
@@ -227,6 +256,12 @@ def verify_outputs(directory):
             require(np.array_equal(meta.event_index, ids), "Metadata event order mismatch")
             require(np.array_equal(meta.segment_index, data["segment_index"]), "Metadata segment order mismatch")
             require(np.array_equal(pd.to_datetime(meta.origin_time_utc, utc=True).astype("int64") // 10**9, origins), "Metadata origin order mismatch")
+            source_windows = {
+                "X": np.empty(data["X"].shape, dtype=np.float64),
+                "Y": np.full(data["Y"].shape, np.nan, dtype=np.float64),
+                "X_observed": data["X_observed"],
+                "Y_mask": data["Y_mask"],
+            }
             for segment_id in np.unique(data["segment_index"]):
                 selected = np.flatnonzero(data["segment_index"] == segment_id)
                 segment = segments.loc[int(segment_id)]
@@ -246,16 +281,40 @@ def verify_outputs(directory):
                 y_rows = starts[:, None] + lookback + np.arange(horizon)
                 expected_x = group.causal_input_depth_m.to_numpy()[x_rows]
                 expected_y = group.observed_depth_m.to_numpy()[y_rows]
+                source_windows["X"][selected, :, 0] = expected_x
+                source_windows["Y"][selected, :, 0] = expected_y
                 actual_x = data["X"][selected, :, 0] * scaler["std_m"] + scaler["mean_m"]
                 actual_y = data["Y"][selected, :, 0] * scaler["std_m"] + scaler["mean_m"]
                 require(np.allclose(actual_x, expected_x, atol=2e-7, rtol=1e-6), "Saved X differs from causal minute values")
                 require(np.allclose(actual_y, expected_y, atol=2e-7, rtol=1e-6, equal_nan=True), "Saved Y differs from observed values")
+            for prefix, threshold in (
+                    ("", config["evaluation"]["threshold_depth_m"]),
+                    ("warning_", config["evaluation"]["warning_threshold_depth_m"])):
+                expected = threshold_labels(source_windows, threshold)
+                require(np.array_equal(
+                    meta[f"{prefix}observed_high_depth_window"].to_numpy(dtype=bool),
+                    expected["observed_high_depth_window"]),
+                    f"{split} {prefix}high-depth metadata mismatch")
+                require(np.array_equal(
+                    meta[f"{prefix}threshold_evaluable_all_future_observed"].to_numpy(dtype=bool),
+                    expected["threshold_evaluable_all_future_observed"]),
+                    f"{split} {prefix}threshold evaluability metadata mismatch")
+                require(np.array_equal(
+                    meta[f"{prefix}external_depth_threshold_state"].to_numpy(dtype=str),
+                    expected["external_depth_threshold_state"]),
+                    f"{split} {prefix}threshold state metadata mismatch")
+                require(np.allclose(
+                    meta[f"{prefix}external_depth_threshold_first_bin_minutes"].to_numpy(dtype=float),
+                    expected["external_depth_threshold_first_bin_minutes"], equal_nan=True),
+                    f"{split} {prefix}threshold crossing-time metadata mismatch")
             if split == "train":
                 for event_id in np.unique(ids):
                     require(np.isclose(data["sample_weight"][ids == event_id].sum(), 1), "Unequal total training weight per event")
             else:
                 require((data["sample_weight"] == 1).all(), "Evaluation weights must preserve original distribution")
-        checks.append(f"{split}: shapes, masks, timestamps, source values and weights verified")
+        checks.append(
+            f"{split}: shapes, masks, timestamps, source values, weights and risk metadata verified"
+        )
     require(all(not event_sets[i] & event_sets[j] for i in range(len(event_sets))
                 for j in range(i + 1, len(event_sets))), "Shared events between splits")
     require(total_samples == len(samples), "Unexpected metadata rows")
@@ -452,10 +511,27 @@ def run_pipeline(source, config_path, output, report):
             "time_semantics": "Bin (T-60s,T] includes right endpoint only. Keep event-start grid across gaps. Omit partial bins outside segment spans.",
             "evaluation_protocol": {
                 "test_temporal": "Most recent chronological holdout for future-period generalization.",
-                "test_risk": "Pre-training fixed, whole-date holdout enriched for evaluable from-below 0.40 m critical-threshold crossings.",
+                "test_risk": "Pre-training fixed, whole-date holdout enriched for evaluable from-below critical-threshold crossings.",
                 "warning_threshold_m": config["evaluation"]["warning_threshold_depth_m"],
                 "critical_threshold_m": config["evaluation"]["threshold_depth_m"],
                 "model_selection": "Use validation only; never select settings using either test split.",
+            },
+            "risk_metadata_schema": {
+                "warning": {
+                    "threshold_m": config["evaluation"]["warning_threshold_depth_m"],
+                    "observed_high_depth_column": "warning_observed_high_depth_window",
+                    "state_column": "warning_external_depth_threshold_state",
+                    "first_crossing_minutes_column": "warning_external_depth_threshold_first_bin_minutes",
+                    "evaluable_column": "warning_threshold_evaluable_all_future_observed",
+                },
+                "critical": {
+                    "threshold_m": config["evaluation"]["threshold_depth_m"],
+                    "observed_high_depth_column": "observed_high_depth_window",
+                    "state_column": "external_depth_threshold_state",
+                    "first_crossing_minutes_column": "external_depth_threshold_first_bin_minutes",
+                    "evaluable_column": "threshold_evaluable_all_future_observed",
+                },
+                "states": ["not_reached", "reached", "already_above", "unavailable"],
             },
         })
         report.parent.mkdir(parents=True, exist_ok=True)

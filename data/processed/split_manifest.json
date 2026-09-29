@@ -7088,9 +7088,9 @@
       "source_record": 1562,
       "start_utc": "2024-01-13T03:44:43Z",
       "effective_end_utc": "2024-01-13T12:28:21Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7100,9 +7100,9 @@
       "source_record": 972,
       "start_utc": "2024-01-13T06:44:40Z",
       "effective_end_utc": "2024-01-13T17:35:39Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7112,9 +7112,9 @@
       "source_record": 135,
       "start_utc": "2024-01-13T07:08:53Z",
       "effective_end_utc": "2024-01-13T15:15:22Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7124,9 +7124,9 @@
       "source_record": 1597,
       "start_utc": "2024-01-13T07:42:02Z",
       "effective_end_utc": "2024-01-13T09:09:29Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7136,9 +7136,9 @@
       "source_record": 1655,
       "start_utc": "2024-01-13T11:59:39Z",
       "effective_end_utc": "2024-01-13T17:48:17Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7148,9 +7148,9 @@
       "source_record": 1575,
       "start_utc": "2024-01-13T12:46:45Z",
       "effective_end_utc": "2024-01-13T17:18:32Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7160,9 +7160,9 @@
       "source_record": 1583,
       "start_utc": "2024-01-13T13:05:35Z",
       "effective_end_utc": "2024-01-13T22:19:03Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7172,9 +7172,9 @@
       "source_record": 692,
       "start_utc": "2024-01-13T13:16:44Z",
       "effective_end_utc": "2024-01-13T17:32:38Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7184,9 +7184,9 @@
       "source_record": 1719,
       "start_utc": "2024-01-13T14:15:14Z",
       "effective_end_utc": "2024-01-13T21:52:32Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7196,9 +7196,9 @@
       "source_record": 288,
       "start_utc": "2024-01-13T14:33:00Z",
       "effective_end_utc": "2024-01-13T17:16:18Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7208,9 +7208,9 @@
       "source_record": 518,
       "start_utc": "2024-01-13T14:40:07Z",
       "effective_end_utc": "2024-01-13T20:45:39Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -7220,9 +7220,9 @@
       "source_record": 68,
       "start_utc": "2024-01-13T15:49:41Z",
       "effective_end_utc": "2024-01-13T17:27:41Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8276,9 +8276,9 @@
       "source_record": 796,
       "start_utc": "2024-03-10T00:00:51Z",
       "effective_end_utc": "2024-03-10T06:57:58Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8288,9 +8288,9 @@
       "source_record": 2255,
       "start_utc": "2024-03-10T00:06:56Z",
       "effective_end_utc": "2024-03-10T03:22:52Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8300,9 +8300,9 @@
       "source_record": 2260,
       "start_utc": "2024-03-10T01:59:16Z",
       "effective_end_utc": "2024-03-10T06:30:00Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8312,9 +8312,9 @@
       "source_record": 203,
       "start_utc": "2024-03-10T02:21:31Z",
       "effective_end_utc": "2024-03-10T07:15:23Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8324,9 +8324,9 @@
       "source_record": 864,
       "start_utc": "2024-03-10T02:28:27Z",
       "effective_end_utc": "2024-03-10T07:19:22Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8336,9 +8336,9 @@
       "source_record": 220,
       "start_utc": "2024-03-10T02:44:12Z",
       "effective_end_utc": "2024-03-10T06:31:42Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8348,9 +8348,9 @@
       "source_record": 1541,
       "start_utc": "2024-03-10T11:04:05Z",
       "effective_end_utc": "2024-03-10T15:45:52Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8360,9 +8360,9 @@
       "source_record": 621,
       "start_utc": "2024-03-10T11:32:27Z",
       "effective_end_utc": "2024-03-10T14:15:08Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8372,9 +8372,9 @@
       "source_record": 1804,
       "start_utc": "2024-03-10T11:35:18Z",
       "effective_end_utc": "2024-03-10T16:29:27Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8384,9 +8384,9 @@
       "source_record": 1984,
       "start_utc": "2024-03-10T11:44:49Z",
       "effective_end_utc": "2024-03-10T19:32:08Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8396,9 +8396,9 @@
       "source_record": 899,
       "start_utc": "2024-03-10T11:47:50Z",
       "effective_end_utc": "2024-03-10T14:05:45Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8408,9 +8408,9 @@
       "source_record": 1553,
       "start_utc": "2024-03-10T11:57:07Z",
       "effective_end_utc": "2024-03-10T17:01:31Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8420,9 +8420,9 @@
       "source_record": 490,
       "start_utc": "2024-03-10T12:04:33Z",
       "effective_end_utc": "2024-03-10T14:24:40Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8432,9 +8432,9 @@
       "source_record": 549,
       "start_utc": "2024-03-10T12:35:24Z",
       "effective_end_utc": "2024-03-10T16:23:58Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -8444,9 +8444,9 @@
       "source_record": 832,
       "start_utc": "2024-03-10T13:13:16Z",
       "effective_end_utc": "2024-03-10T13:40:39Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -13688,9 +13688,9 @@
       "source_record": 2258,
       "start_utc": "2024-10-18T00:03:49Z",
       "effective_end_utc": "2024-10-18T02:34:01Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13700,9 +13700,9 @@
       "source_record": 1582,
       "start_utc": "2024-10-18T01:09:19Z",
       "effective_end_utc": "2024-10-18T02:20:22Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13712,9 +13712,9 @@
       "source_record": 1121,
       "start_utc": "2024-10-18T11:42:48Z",
       "effective_end_utc": "2024-10-18T15:33:46Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13724,9 +13724,9 @@
       "source_record": 1890,
       "start_utc": "2024-10-18T12:16:16Z",
       "effective_end_utc": "2024-10-18T14:24:15Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13736,9 +13736,9 @@
       "source_record": 2326,
       "start_utc": "2024-10-18T12:18:01Z",
       "effective_end_utc": "2024-10-18T16:02:12Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13748,9 +13748,9 @@
       "source_record": 253,
       "start_utc": "2024-10-18T12:29:31Z",
       "effective_end_utc": "2024-10-18T14:23:26Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13760,9 +13760,9 @@
       "source_record": 1056,
       "start_utc": "2024-10-18T12:31:57Z",
       "effective_end_utc": "2024-10-18T14:24:41Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13772,9 +13772,9 @@
       "source_record": 1092,
       "start_utc": "2024-10-18T12:41:37Z",
       "effective_end_utc": "2024-10-18T16:26:36Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13784,9 +13784,9 @@
       "source_record": 1536,
       "start_utc": "2024-10-18T12:42:49Z",
       "effective_end_utc": "2024-10-18T17:14:45Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13796,9 +13796,9 @@
       "source_record": 846,
       "start_utc": "2024-10-18T12:48:10Z",
       "effective_end_utc": "2024-10-18T15:19:51Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13808,9 +13808,9 @@
       "source_record": 347,
       "start_utc": "2024-10-18T12:49:18Z",
       "effective_end_utc": "2024-10-18T16:32:36Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13820,9 +13820,9 @@
       "source_record": 1809,
       "start_utc": "2024-10-18T12:56:03Z",
       "effective_end_utc": "2024-10-18T14:28:44Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13832,9 +13832,9 @@
       "source_record": 280,
       "start_utc": "2024-10-18T13:04:27Z",
       "effective_end_utc": "2024-10-18T13:48:27Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13844,9 +13844,9 @@
       "source_record": 800,
       "start_utc": "2024-10-18T13:46:47Z",
       "effective_end_utc": "2024-10-18T14:09:10Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -13856,9 +13856,9 @@
       "source_record": 1559,
       "start_utc": "2024-10-18T14:33:19Z",
       "effective_end_utc": "2024-10-18T18:11:24Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18630,9 +18630,9 @@
       "source_record": 2055,
       "start_utc": "2025-08-21T00:13:40Z",
       "effective_end_utc": "2025-08-21T04:06:24Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18642,9 +18642,9 @@
       "source_record": 879,
       "start_utc": "2025-08-21T01:33:19Z",
       "effective_end_utc": "2025-08-21T07:44:18Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18654,9 +18654,9 @@
       "source_record": 2274,
       "start_utc": "2025-08-21T11:17:40Z",
       "effective_end_utc": "2025-08-21T13:09:40Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18666,9 +18666,9 @@
       "source_record": 58,
       "start_utc": "2025-08-21T12:59:31Z",
       "effective_end_utc": "2025-08-21T16:02:48Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18678,9 +18678,9 @@
       "source_record": 1763,
       "start_utc": "2025-08-21T13:57:56Z",
       "effective_end_utc": "2025-08-21T14:18:56Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18690,9 +18690,9 @@
       "source_record": 317,
       "start_utc": "2025-08-21T22:12:50Z",
       "effective_end_utc": "2025-08-22T05:13:48Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18702,9 +18702,9 @@
       "source_record": 904,
       "start_utc": "2025-08-21T22:24:55Z",
       "effective_end_utc": "2025-08-22T01:10:54Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18714,9 +18714,9 @@
       "source_record": 316,
       "start_utc": "2025-08-21T22:30:39Z",
       "effective_end_utc": "2025-08-22T04:51:38Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18726,9 +18726,9 @@
       "source_record": 2020,
       "start_utc": "2025-08-21T22:30:57Z",
       "effective_end_utc": "2025-08-22T03:38:56Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18738,9 +18738,9 @@
       "source_record": 607,
       "start_utc": "2025-08-21T22:37:56Z",
       "effective_end_utc": "2025-08-22T01:35:55Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18750,9 +18750,9 @@
       "source_record": 197,
       "start_utc": "2025-08-21T22:40:30Z",
       "effective_end_utc": "2025-08-22T01:15:20Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18762,9 +18762,9 @@
       "source_record": 900,
       "start_utc": "2025-08-21T22:43:14Z",
       "effective_end_utc": "2025-08-22T01:01:14Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18774,9 +18774,9 @@
       "source_record": 1755,
       "start_utc": "2025-08-21T23:08:39Z",
       "effective_end_utc": "2025-08-22T01:17:39Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18786,9 +18786,9 @@
       "source_record": 385,
       "start_utc": "2025-08-21T23:12:05Z",
       "effective_end_utc": "2025-08-22T00:47:05Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18798,9 +18798,9 @@
       "source_record": 1767,
       "start_utc": "2025-08-21T23:12:37Z",
       "effective_end_utc": "2025-08-22T03:38:12Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18810,9 +18810,9 @@
       "source_record": 1624,
       "start_utc": "2025-08-21T23:12:40Z",
       "effective_end_utc": "2025-08-22T01:13:58Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -18822,9 +18822,9 @@
       "source_record": 507,
       "start_utc": "2025-08-21T23:38:14Z",
       "effective_end_utc": "2025-08-22T00:20:14Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -20118,9 +20118,9 @@
       "source_record": 190,
       "start_utc": "2025-10-13T04:08:51Z",
       "effective_end_utc": "2025-10-13T06:07:55Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20130,9 +20130,9 @@
       "source_record": 435,
       "start_utc": "2025-10-13T04:50:47Z",
       "effective_end_utc": "2025-10-13T09:01:46Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20142,9 +20142,9 @@
       "source_record": 244,
       "start_utc": "2025-10-13T05:24:28Z",
       "effective_end_utc": "2025-10-13T10:03:28Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20154,9 +20154,9 @@
       "source_record": 819,
       "start_utc": "2025-10-13T05:26:35Z",
       "effective_end_utc": "2025-10-13T07:09:53Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20166,9 +20166,9 @@
       "source_record": 1811,
       "start_utc": "2025-10-13T05:32:05Z",
       "effective_end_utc": "2025-10-13T05:50:05Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20178,9 +20178,9 @@
       "source_record": 961,
       "start_utc": "2025-10-13T05:33:20Z",
       "effective_end_utc": "2025-10-13T08:41:55Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20190,9 +20190,9 @@
       "source_record": 1749,
       "start_utc": "2025-10-13T05:43:47Z",
       "effective_end_utc": "2025-10-13T07:44:47Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20202,9 +20202,9 @@
       "source_record": 294,
       "start_utc": "2025-10-13T05:46:08Z",
       "effective_end_utc": "2025-10-13T10:09:07Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20214,9 +20214,9 @@
       "source_record": 2205,
       "start_utc": "2025-10-13T05:54:28Z",
       "effective_end_utc": "2025-10-13T07:15:28Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20226,9 +20226,9 @@
       "source_record": 378,
       "start_utc": "2025-10-13T05:56:58Z",
       "effective_end_utc": "2025-10-13T07:30:58Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20238,9 +20238,9 @@
       "source_record": 1635,
       "start_utc": "2025-10-13T06:02:02Z",
       "effective_end_utc": "2025-10-13T07:49:01Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20250,9 +20250,9 @@
       "source_record": 1620,
       "start_utc": "2025-10-13T06:04:52Z",
       "effective_end_utc": "2025-10-13T08:37:52Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20262,9 +20262,9 @@
       "source_record": 647,
       "start_utc": "2025-10-13T06:06:14Z",
       "effective_end_utc": "2025-10-13T07:15:46Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20274,9 +20274,9 @@
       "source_record": 1957,
       "start_utc": "2025-10-13T06:19:04Z",
       "effective_end_utc": "2025-10-13T07:09:04Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20286,9 +20286,9 @@
       "source_record": 2332,
       "start_utc": "2025-10-13T06:28:56Z",
       "effective_end_utc": "2025-10-13T12:25:54Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20298,9 +20298,9 @@
       "source_record": 1612,
       "start_utc": "2025-10-13T08:07:13Z",
       "effective_end_utc": "2025-10-13T08:49:13Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20310,9 +20310,9 @@
       "source_record": 675,
       "start_utc": "2025-10-13T08:17:01Z",
       "effective_end_utc": "2025-10-13T09:14:01Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20322,9 +20322,9 @@
       "source_record": 2036,
       "start_utc": "2025-10-13T16:04:26Z",
       "effective_end_utc": "2025-10-13T22:10:07Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20334,9 +20334,9 @@
       "source_record": 133,
       "start_utc": "2025-10-13T16:05:27Z",
       "effective_end_utc": "2025-10-13T22:17:26Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20346,9 +20346,9 @@
       "source_record": 1576,
       "start_utc": "2025-10-13T16:08:57Z",
       "effective_end_utc": "2025-10-13T19:15:56Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20358,9 +20358,9 @@
       "source_record": 2251,
       "start_utc": "2025-10-13T16:18:05Z",
       "effective_end_utc": "2025-10-13T22:03:05Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20370,9 +20370,9 @@
       "source_record": 851,
       "start_utc": "2025-10-13T16:25:51Z",
       "effective_end_utc": "2025-10-13T19:18:36Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20382,9 +20382,9 @@
       "source_record": 1037,
       "start_utc": "2025-10-13T16:39:04Z",
       "effective_end_utc": "2025-10-13T18:40:04Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20394,9 +20394,9 @@
       "source_record": 1709,
       "start_utc": "2025-10-13T16:44:26Z",
       "effective_end_utc": "2025-10-13T19:17:25Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20406,9 +20406,9 @@
       "source_record": 1580,
       "start_utc": "2025-10-13T16:44:45Z",
       "effective_end_utc": "2025-10-13T20:56:00Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20418,9 +20418,9 @@
       "source_record": 452,
       "start_utc": "2025-10-13T16:47:47Z",
       "effective_end_utc": "2025-10-13T19:48:47Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20430,9 +20430,9 @@
       "source_record": 702,
       "start_utc": "2025-10-13T16:48:33Z",
       "effective_end_utc": "2025-10-14T17:26:29Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20442,9 +20442,9 @@
       "source_record": 707,
       "start_utc": "2025-10-13T16:49:18Z",
       "effective_end_utc": "2025-10-13T19:06:11Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20454,9 +20454,9 @@
       "source_record": 433,
       "start_utc": "2025-10-13T17:30:44Z",
       "effective_end_utc": "2025-10-13T21:04:36Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -20466,9 +20466,9 @@
       "source_record": 1245,
       "start_utc": "2025-10-13T18:14:27Z",
       "effective_end_utc": "2025-10-14T04:10:51Z",
-      "split": "test_risk",
+      "split": "train",
       "temporal_split": "train",
-      "exclusion_reason": "grouped_risk_holdout_date",
+      "exclusion_reason": "",
       "quarantine_reasons": []
     },
     {
@@ -26482,9 +26482,9 @@
       "source_record": 581,
       "start_utc": "2026-04-19T00:19:28Z",
       "effective_end_utc": "2026-04-19T04:35:27Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26494,9 +26494,9 @@
       "source_record": 1365,
       "start_utc": "2026-04-19T00:47:48Z",
       "effective_end_utc": "2026-04-19T03:00:48Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26506,9 +26506,9 @@
       "source_record": 1299,
       "start_utc": "2026-04-19T00:49:29Z",
       "effective_end_utc": "2026-04-19T05:06:29Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26518,9 +26518,9 @@
       "source_record": 1266,
       "start_utc": "2026-04-19T01:00:13Z",
       "effective_end_utc": "2026-04-19T02:56:13Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26530,9 +26530,9 @@
       "source_record": 1263,
       "start_utc": "2026-04-19T01:05:49Z",
       "effective_end_utc": "2026-04-19T04:47:49Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26542,9 +26542,9 @@
       "source_record": 1385,
       "start_utc": "2026-04-19T01:11:34Z",
       "effective_end_utc": "2026-04-19T07:01:31Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26554,9 +26554,9 @@
       "source_record": 1295,
       "start_utc": "2026-04-19T01:14:42Z",
       "effective_end_utc": "2026-04-19T03:25:42Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26566,9 +26566,9 @@
       "source_record": 1424,
       "start_utc": "2026-04-19T01:16:27Z",
       "effective_end_utc": "2026-04-19T05:22:06Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26578,9 +26578,9 @@
       "source_record": 1466,
       "start_utc": "2026-04-19T01:19:48Z",
       "effective_end_utc": "2026-04-19T03:12:36Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26590,9 +26590,9 @@
       "source_record": 902,
       "start_utc": "2026-04-19T01:27:16Z",
       "effective_end_utc": "2026-04-19T02:54:16Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26602,9 +26602,9 @@
       "source_record": 1320,
       "start_utc": "2026-04-19T01:30:20Z",
       "effective_end_utc": "2026-04-19T02:28:20Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26614,9 +26614,9 @@
       "source_record": 1280,
       "start_utc": "2026-04-19T01:30:30Z",
       "effective_end_utc": "2026-04-19T15:09:13Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26626,9 +26626,9 @@
       "source_record": 1457,
       "start_utc": "2026-04-19T01:40:45Z",
       "effective_end_utc": "2026-04-19T04:13:44Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26638,9 +26638,9 @@
       "source_record": 2074,
       "start_utc": "2026-04-19T02:59:15Z",
       "effective_end_utc": "2026-04-19T06:55:16Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26650,9 +26650,9 @@
       "source_record": 1342,
       "start_utc": "2026-04-19T07:08:56Z",
       "effective_end_utc": "2026-04-19T07:20:32Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26662,9 +26662,9 @@
       "source_record": 1376,
       "start_utc": "2026-04-19T07:31:04Z",
       "effective_end_utc": "2026-04-19T07:51:04Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26674,9 +26674,9 @@
       "source_record": 1291,
       "start_utc": "2026-04-19T13:36:27Z",
       "effective_end_utc": "2026-04-19T15:49:26Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26686,9 +26686,9 @@
       "source_record": 2103,
       "start_utc": "2026-04-19T16:30:24Z",
       "effective_end_utc": "2026-04-19T18:25:18Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26698,9 +26698,9 @@
       "source_record": 2077,
       "start_utc": "2026-04-19T18:20:21Z",
       "effective_end_utc": "2026-04-19T18:27:21Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -26710,9 +26710,9 @@
       "source_record": 1412,
       "start_utc": "2026-04-19T19:09:21Z",
       "effective_end_utc": "2026-04-19T19:20:21Z",
-      "split": "train",
+      "split": "test_risk",
       "temporal_split": "train",
-      "exclusion_reason": "",
+      "exclusion_reason": "grouped_risk_holdout_date",
       "quarantine_reasons": []
     },
     {
@@ -38250,20 +38250,79 @@
   "risk_test": {
     "source_temporal_split": "train",
     "group_by": "utc_event_start_date",
-    "selection": "explicit_pretraining_dates_from_sha256_seeded_crossing_date_order",
+    "selection": "explicit_pretraining_dates_from_chronology_stratified_sha256_crossing_date_order",
     "seed": 42,
     "minimum_dates": 4,
     "minimum_crossing_events": 4,
     "selected_dates_utc": [
       "2023-09-29T00:00:00Z",
-      "2024-01-13T00:00:00Z",
-      "2024-03-10T00:00:00Z",
-      "2025-10-13T00:00:00Z"
+      "2024-10-18T00:00:00Z",
+      "2025-08-21T00:00:00Z",
+      "2026-04-19T00:00:00Z"
     ],
-    "candidate_dates_with_evaluable_crossings": 15,
-    "candidate_crossing_events": 22,
-    "selected_event_count": 88,
-    "selected_crossing_event_count": 6,
+    "critical_threshold_m": 0.3,
+    "candidate_dates_with_evaluable_crossings": 21,
+    "candidate_crossing_events": 38,
+    "candidate_dates_utc": [
+      "2022-01-02T00:00:00Z",
+      "2023-01-23T00:00:00Z",
+      "2023-09-29T00:00:00Z",
+      "2024-01-10T00:00:00Z",
+      "2024-01-13T00:00:00Z",
+      "2024-03-09T00:00:00Z",
+      "2024-04-12T00:00:00Z",
+      "2024-09-20T00:00:00Z",
+      "2024-09-21T00:00:00Z",
+      "2024-09-22T00:00:00Z",
+      "2024-10-18T00:00:00Z",
+      "2024-11-14T00:00:00Z",
+      "2024-11-15T00:00:00Z",
+      "2024-11-16T00:00:00Z",
+      "2025-06-27T00:00:00Z",
+      "2025-08-21T00:00:00Z",
+      "2025-08-22T00:00:00Z",
+      "2025-10-13T00:00:00Z",
+      "2025-10-30T00:00:00Z",
+      "2025-11-07T00:00:00Z",
+      "2026-04-19T00:00:00Z"
+    ],
+    "selection_procedure": {
+      "chronological_strata": 4,
+      "candidate_dates_by_stratum": [
+        [
+          "2022-01-02T00:00:00Z",
+          "2023-01-23T00:00:00Z",
+          "2023-09-29T00:00:00Z",
+          "2024-01-10T00:00:00Z",
+          "2024-01-13T00:00:00Z",
+          "2024-03-09T00:00:00Z"
+        ],
+        [
+          "2024-04-12T00:00:00Z",
+          "2024-09-20T00:00:00Z",
+          "2024-09-21T00:00:00Z",
+          "2024-09-22T00:00:00Z",
+          "2024-10-18T00:00:00Z"
+        ],
+        [
+          "2024-11-14T00:00:00Z",
+          "2024-11-15T00:00:00Z",
+          "2024-11-16T00:00:00Z",
+          "2025-06-27T00:00:00Z",
+          "2025-08-21T00:00:00Z"
+        ],
+        [
+          "2025-08-22T00:00:00Z",
+          "2025-10-13T00:00:00Z",
+          "2025-10-30T00:00:00Z",
+          "2025-11-07T00:00:00Z",
+          "2026-04-19T00:00:00Z"
+        ]
+      ],
+      "choice_within_each_stratum": "lowest sha256(seed:UTC-date)"
+    },
+    "selected_event_count": 83,
+    "selected_crossing_event_count": 9,
     "selection_frozen_before_model_training": true,
     "selection_uses_model_predictions_or_errors": false
   }

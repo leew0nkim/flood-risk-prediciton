@@ -1,8 +1,8 @@
 {
   "source": "export.csv",
   "source_sha256": "9fb087622390b21a4aae6506ab08b8c92d6fd2335a4c95a290753800ec064aa1",
-  "config_sha256": "88487d565a383f5857187c4c0459bad1543573f2107db3557ab17e72573bf8b5",
-  "implementation_sha256": "4878b0a3ee622240d6605203ee3ed27eb8c44b99580f6b1aa8f9239b1b178b10",
+  "config_sha256": "f1fb24e7d420114385ee1a08f813d2cfc11cc33806cb381299a0f145cb6b275d",
+  "implementation_sha256": "bfef64ec051f484b5d62a23809c36b7032743a8a389708066710703138e21227",
   "runtime": {
     "python": "3.13.9",
     "numpy": "2.3.5",
@@ -67,7 +67,7 @@
       "quarantined": 12
     },
     "summary_peak_mismatch_events": 52,
-    "high_depth_events_before_quarantine": 131
+    "high_depth_events_before_quarantine": 256
   },
   "exclusion_counts": {
     "embargo": 95,
@@ -80,102 +80,161 @@
   "risk_test": {
     "source_temporal_split": "train",
     "group_by": "utc_event_start_date",
-    "selection": "explicit_pretraining_dates_from_sha256_seeded_crossing_date_order",
+    "selection": "explicit_pretraining_dates_from_chronology_stratified_sha256_crossing_date_order",
     "seed": 42,
     "minimum_dates": 4,
     "minimum_crossing_events": 4,
     "selected_dates_utc": [
       "2023-09-29T00:00:00Z",
-      "2024-01-13T00:00:00Z",
-      "2024-03-10T00:00:00Z",
-      "2025-10-13T00:00:00Z"
+      "2024-10-18T00:00:00Z",
+      "2025-08-21T00:00:00Z",
+      "2026-04-19T00:00:00Z"
     ],
-    "candidate_dates_with_evaluable_crossings": 15,
-    "candidate_crossing_events": 22,
-    "selected_event_count": 88,
-    "selected_crossing_event_count": 6,
+    "critical_threshold_m": 0.3,
+    "candidate_dates_with_evaluable_crossings": 21,
+    "candidate_crossing_events": 38,
+    "candidate_dates_utc": [
+      "2022-01-02T00:00:00Z",
+      "2023-01-23T00:00:00Z",
+      "2023-09-29T00:00:00Z",
+      "2024-01-10T00:00:00Z",
+      "2024-01-13T00:00:00Z",
+      "2024-03-09T00:00:00Z",
+      "2024-04-12T00:00:00Z",
+      "2024-09-20T00:00:00Z",
+      "2024-09-21T00:00:00Z",
+      "2024-09-22T00:00:00Z",
+      "2024-10-18T00:00:00Z",
+      "2024-11-14T00:00:00Z",
+      "2024-11-15T00:00:00Z",
+      "2024-11-16T00:00:00Z",
+      "2025-06-27T00:00:00Z",
+      "2025-08-21T00:00:00Z",
+      "2025-08-22T00:00:00Z",
+      "2025-10-13T00:00:00Z",
+      "2025-10-30T00:00:00Z",
+      "2025-11-07T00:00:00Z",
+      "2026-04-19T00:00:00Z"
+    ],
+    "selection_procedure": {
+      "chronological_strata": 4,
+      "candidate_dates_by_stratum": [
+        [
+          "2022-01-02T00:00:00Z",
+          "2023-01-23T00:00:00Z",
+          "2023-09-29T00:00:00Z",
+          "2024-01-10T00:00:00Z",
+          "2024-01-13T00:00:00Z",
+          "2024-03-09T00:00:00Z"
+        ],
+        [
+          "2024-04-12T00:00:00Z",
+          "2024-09-20T00:00:00Z",
+          "2024-09-21T00:00:00Z",
+          "2024-09-22T00:00:00Z",
+          "2024-10-18T00:00:00Z"
+        ],
+        [
+          "2024-11-14T00:00:00Z",
+          "2024-11-15T00:00:00Z",
+          "2024-11-16T00:00:00Z",
+          "2025-06-27T00:00:00Z",
+          "2025-08-21T00:00:00Z"
+        ],
+        [
+          "2025-08-22T00:00:00Z",
+          "2025-10-13T00:00:00Z",
+          "2025-10-30T00:00:00Z",
+          "2025-11-07T00:00:00Z",
+          "2026-04-19T00:00:00Z"
+        ]
+      ],
+      "choice_within_each_stratum": "lowest sha256(seed:UTC-date)"
+    },
+    "selected_event_count": 83,
+    "selected_crossing_event_count": 9,
     "selection_frozen_before_model_training": true,
     "selection_uses_model_predictions_or_errors": false
   },
   "scaler": {
     "method": "standard",
     "depth_unit": "m",
-    "mean_m": 0.09862059671346633,
-    "std_m": 0.09549262526877111,
+    "mean_m": 0.09987502432707555,
+    "std_m": 0.09922383881199749,
     "ddof": 0,
     "fit_on": "unique_observed_training_input_bins",
-    "unique_observed_bin_count": 142095,
+    "unique_observed_bin_count": 144407,
     "shared_X_Y_transform": true
   },
   "splits": {
     "train": {
-      "assigned_events": 2134,
-      "candidate_windows_before_gap_splitting": 255301,
-      "minute_bins": 259374,
-      "observed_minute_bins": 231515,
-      "history_origins_in_segments": 175199,
-      "input_quality_ready_origins": 136898,
-      "candidate_windows": 150713,
-      "accepted_windows": 95597,
-      "insufficient_input_observations": 30066,
+      "assigned_events": 2139,
+      "candidate_windows_before_gap_splitting": 260803,
+      "minute_bins": 264519,
+      "observed_minute_bins": 235928,
+      "history_origins_in_segments": 178705,
+      "input_quality_ready_origins": 139173,
+      "candidate_windows": 153872,
+      "accepted_windows": 97056,
+      "insufficient_input_observations": 31053,
       "unfilled_input": 0,
-      "insufficient_target_observations": 25050,
-      "segments": 14431,
-      "segments_too_short_for_45_bins": 12954,
-      "events_with_samples": 978,
-      "events_without_samples": 1156,
+      "insufficient_target_observations": 25763,
+      "segments": 14565,
+      "segments_too_short_for_45_bins": 13065,
+      "events_with_samples": 985,
+      "events_without_samples": 1154,
       "X_shape": [
-        95597,
+        97056,
         30,
         1
       ],
       "Y_shape": [
-        95597,
+        97056,
         15,
         1
       ],
       "source_start_utc": "2020-11-16T01:41:17Z",
       "source_end_utc": "2026-04-20T06:56:28Z",
       "sensors_with_samples": 99,
-      "high_depth_events_with_samples": 30,
-      "observed_high_depth_windows": 2125,
+      "high_depth_events_with_samples": 78,
+      "observed_high_depth_windows": 6040,
       "phase_counts": {
-        "stable": 54516,
-        "falling": 28968,
-        "rising": 8990,
-        "unknown": 3123
+        "stable": 55540,
+        "falling": 29263,
+        "rising": 9063,
+        "unknown": 3190
       },
       "observed_targets_by_horizon": [
-        92141,
-        92126,
-        92118,
-        92071,
-        92069,
-        92047,
-        92032,
-        92058,
-        92077,
-        92167,
-        92382,
-        92451,
-        92512,
-        92504,
-        92474
+        93523,
+        93509,
+        93499,
+        93453,
+        93444,
+        93431,
+        93413,
+        93435,
+        93455,
+        93551,
+        93759,
+        93831,
+        93896,
+        93896,
+        93866
       ],
       "threshold_state_counts": {
-        "unavailable": 52356,
-        "not_reached": 41349,
-        "already_above": 1768,
-        "reached": 124
+        "unavailable": 51077,
+        "not_reached": 40599,
+        "already_above": 5183,
+        "reached": 197
       },
-      "unique_events_reaching_threshold_from_below": 16,
+      "unique_events_reaching_threshold_from_below": 29,
       "warning_threshold_state_counts": {
-        "unavailable": 50303,
-        "not_reached": 40042,
-        "already_above": 4992,
-        "reached": 260
+        "unavailable": 49362,
+        "not_reached": 39575,
+        "already_above": 7821,
+        "reached": 298
       },
-      "unique_events_reaching_warning_from_below": 33
+      "unique_events_reaching_warning_from_below": 40
     },
     "validation": {
       "assigned_events": 435,
@@ -206,8 +265,8 @@
       "source_start_utc": "2026-04-22T03:37:24Z",
       "source_end_utc": "2026-07-17T19:40:45Z",
       "sensors_with_samples": 67,
-      "high_depth_events_with_samples": 13,
-      "observed_high_depth_windows": 367,
+      "high_depth_events_with_samples": 22,
+      "observed_high_depth_windows": 960,
       "phase_counts": {
         "stable": 14378,
         "falling": 6926,
@@ -232,19 +291,19 @@
         24513
       ],
       "threshold_state_counts": {
-        "not_reached": 19750,
-        "unavailable": 4767,
-        "already_above": 318,
-        "reached": 22
-      },
-      "unique_events_reaching_threshold_from_below": 3,
-      "warning_threshold_state_counts": {
         "not_reached": 19262,
         "unavailable": 4661,
         "already_above": 850,
         "reached": 84
       },
-      "unique_events_reaching_warning_from_below": 7
+      "unique_events_reaching_threshold_from_below": 7,
+      "warning_threshold_state_counts": {
+        "not_reached": 18864,
+        "unavailable": 4600,
+        "already_above": 1272,
+        "reached": 121
+      },
+      "unique_events_reaching_warning_from_below": 11
     },
     "test_temporal": {
       "assigned_events": 420,
@@ -275,8 +334,8 @@
       "source_start_utc": "2026-07-19T00:01:03Z",
       "source_end_utc": "2026-08-23T17:46:07Z",
       "sensors_with_samples": 69,
-      "high_depth_events_with_samples": 9,
-      "observed_high_depth_windows": 79,
+      "high_depth_events_with_samples": 17,
+      "observed_high_depth_windows": 380,
       "phase_counts": {
         "stable": 13282,
         "falling": 5077,
@@ -301,96 +360,97 @@
         20132
       ],
       "threshold_state_counts": {
-        "not_reached": 15363,
-        "unavailable": 5038,
-        "already_above": 77
-      },
-      "unique_events_reaching_threshold_from_below": 0,
-      "warning_threshold_state_counts": {
         "not_reached": 15124,
         "unavailable": 4995,
         "already_above": 328,
         "reached": 31
       },
-      "unique_events_reaching_warning_from_below": 3
+      "unique_events_reaching_threshold_from_below": 3,
+      "warning_threshold_state_counts": {
+        "not_reached": 14763,
+        "unavailable": 4933,
+        "already_above": 707,
+        "reached": 75
+      },
+      "unique_events_reaching_warning_from_below": 5
     },
     "test_risk": {
-      "assigned_events": 88,
-      "candidate_windows_before_gap_splitting": 21416,
-      "minute_bins": 22121,
-      "observed_minute_bins": 20001,
-      "history_origins_in_segments": 16682,
-      "input_quality_ready_origins": 13140,
-      "candidate_windows": 14920,
-      "accepted_windows": 9421,
-      "insufficient_input_observations": 2847,
+      "assigned_events": 83,
+      "candidate_windows_before_gap_splitting": 15914,
+      "minute_bins": 16976,
+      "observed_minute_bins": 15588,
+      "history_origins_in_segments": 13176,
+      "input_quality_ready_origins": 10865,
+      "candidate_windows": 11761,
+      "accepted_windows": 7962,
+      "insufficient_input_observations": 1860,
       "unfilled_input": 0,
-      "insufficient_target_observations": 2652,
-      "segments": 544,
-      "segments_too_short_for_45_bins": 434,
-      "events_with_samples": 66,
-      "events_without_samples": 22,
+      "insufficient_target_observations": 1939,
+      "segments": 410,
+      "segments_too_short_for_45_bins": 323,
+      "events_with_samples": 59,
+      "events_without_samples": 24,
       "X_shape": [
-        9421,
+        7962,
         30,
         1
       ],
       "Y_shape": [
-        9421,
+        7962,
         15,
         1
       ],
       "source_start_utc": "2023-09-29T00:01:33Z",
-      "source_end_utc": "2025-10-14T17:26:29Z",
-      "sensors_with_samples": 29,
-      "high_depth_events_with_samples": 13,
-      "observed_high_depth_windows": 761,
+      "source_end_utc": "2026-04-19T19:20:21Z",
+      "sensors_with_samples": 30,
+      "high_depth_events_with_samples": 17,
+      "observed_high_depth_windows": 1456,
       "phase_counts": {
-        "stable": 4730,
-        "falling": 3163,
-        "rising": 1219,
-        "unknown": 309
+        "stable": 3706,
+        "falling": 2868,
+        "rising": 1146,
+        "unknown": 242
       },
       "observed_targets_by_horizon": [
-        9078,
-        9077,
-        9079,
-        9073,
-        9060,
-        9062,
-        9049,
-        9052,
-        9061,
-        9072,
-        9090,
-        9106,
-        9112,
-        9117,
-        9112
+        7696,
+        7694,
+        7698,
+        7691,
+        7685,
+        7678,
+        7668,
+        7675,
+        7683,
+        7688,
+        7713,
+        7726,
+        7728,
+        7725,
+        7720
       ],
       "threshold_state_counts": {
-        "unavailable": 4921,
-        "not_reached": 3841,
-        "already_above": 624,
-        "reached": 35
+        "unavailable": 3545,
+        "not_reached": 3068,
+        "already_above": 1253,
+        "reached": 96
       },
-      "unique_events_reaching_threshold_from_below": 6,
+      "unique_events_reaching_threshold_from_below": 9,
       "warning_threshold_state_counts": {
-        "unavailable": 4319,
-        "not_reached": 3625,
-        "already_above": 1444,
-        "reached": 33
+        "unavailable": 3321,
+        "not_reached": 2766,
+        "already_above": 1781,
+        "reached": 94
       },
-      "unique_events_reaching_warning_from_below": 5
+      "unique_events_reaching_warning_from_below": 10
     }
   },
   "verification": {
     "passed": true,
     "checks": [
-      "train: shapes, masks, timestamps, source values and weights verified",
-      "validation: shapes, masks, timestamps, source values and weights verified",
-      "test_temporal: shapes, masks, timestamps, source values and weights verified",
-      "test_risk: shapes, masks, timestamps, source values and weights verified",
+      "train: shapes, masks, timestamps, source values, weights and risk metadata verified",
+      "validation: shapes, masks, timestamps, source values, weights and risk metadata verified",
+      "test_temporal: shapes, masks, timestamps, source values, weights and risk metadata verified",
+      "test_risk: shapes, masks, timestamps, source values, weights and risk metadata verified",
       "unique observed training bins independently reconciled with scaler",
       "all split events are disjoint; temporal train/validation/test remain chronological",
       "risk-test UTC dates are wholly excluded from training",
@@ -402,7 +462,7 @@
     "Summary peak differences above 0.01 m are conservatively quarantined pending review.",
     "Same-date grouping and 24-hour embargo do not establish storm independence.",
     "Targets are the last observed depth in each future minute bin; missing labels remain NaN.",
-    "External warning/critical thresholds (0.30/0.40 m) are project screening assumptions, not labels for door opening or evacuation.",
+    "External warning/critical thresholds (0.25/0.30 m) are project screening assumptions, not labels for door opening or evacuation.",
     "Observation timestamps are assumed available without network latency; received timestamps are absent.",
     "Source event selection and retrospective quality filtering can bias continuous-stream performance."
   ]

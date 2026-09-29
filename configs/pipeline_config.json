@@ -69,15 +69,15 @@
     "risk_test": {
       "source_temporal_split": "train",
       "group_by": "utc_event_start_date",
-      "selection": "explicit_pretraining_dates_from_sha256_seeded_crossing_date_order",
+      "selection": "explicit_pretraining_dates_from_chronology_stratified_sha256_crossing_date_order",
       "seed": 42,
       "minimum_dates": 4,
       "minimum_crossing_events": 4,
       "selected_dates_utc": [
         "2023-09-29T00:00:00Z",
-        "2024-01-13T00:00:00Z",
-        "2024-03-10T00:00:00Z",
-        "2025-10-13T00:00:00Z"
+        "2024-10-18T00:00:00Z",
+        "2025-08-21T00:00:00Z",
+        "2026-04-19T00:00:00Z"
       ]
     },
     "save_actual_dates_and_event_ids": true
@@ -145,10 +145,10 @@
       "forecast_coverage"
     ],
     "direction_change_threshold_m": 0.01,
-    "warning_threshold_depth_m": 0.3,
-    "threshold_depth_m": 0.4,
+    "warning_threshold_depth_m": 0.25,
+    "threshold_depth_m": 0.3,
     "threshold_time_eval_requires_all_future_bins_observed": true,
-    "threshold_kind": "external_depth_screening_project_assumption"
+    "threshold_kind": "external_depth_warning_and_door_opening_risk_project_thresholds"
   },
   "runtime": {
     "forecast_interval_seconds": 60,
