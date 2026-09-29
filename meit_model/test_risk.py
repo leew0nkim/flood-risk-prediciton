@@ -132,7 +132,7 @@ def test_current_external_warning_time_zero():
     현재 외부수위가 이미 0.295m 이상이면,
     미래 예측과 관계없이 external warning time은 0분이어야 한다.
     """
-    engine = RiskEngine()
+    engine = RiskEngine(forecast_warning_depth_m=0.295)
 
     result = engine.evaluate(
         current_depth_m=0.295,
@@ -236,7 +236,7 @@ def test_external_forecast_warning_is_not_led_rule():
 
     LED 미래 위험은 미래 등가수심 기반 T_critical로 판단한다.
     """
-    engine = RiskEngine()
+    engine = RiskEngine(forecast_warning_depth_m=0.295)
 
     result = engine.evaluate(
         current_depth_m=0.20,

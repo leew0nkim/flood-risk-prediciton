@@ -32,6 +32,27 @@ DEFAULT_ALARM_THRESHOLDS = [
 ]
 
 
+def select_warning_threshold(sweep_results):
+    """Select a deterministic, safety-first operating point on validation data."""
+    candidates = [item for item in sweep_results
+                  if item["pooled"]["timely_recall"] is not None]
+    if not candidates:
+        raise ValueError("No threshold has an evaluable timely-recall result")
+
+    def score(item):
+        pooled = item["pooled"]
+        return (
+            pooled["timely_recall"],
+            pooled["recall"] if pooled["recall"] is not None else -1.,
+            -(pooled["false_positive_rate"]
+              if pooled["false_positive_rate"] is not None else 1.),
+            pooled["precision"] if pooled["precision"] is not None else -1.,
+            item["alarm_threshold_m"],
+        )
+
+    return max(candidates, key=score)
+
+
 def safe_divide(
     numerator,
     denominator,
@@ -972,6 +993,7 @@ def main():
         exist_ok=True,
     )
 
+    selected = select_warning_threshold(sweep_results)
     with open(
         args.output,
         "w",
@@ -980,8 +1002,20 @@ def main():
 
         json.dump(
             {
+                "schema_version": 2,
+                "data_fingerprint": fingerprint,
                 "actual_critical_depth_m":
                     ACTUAL_CRITICAL_DEPTH_M,
+
+                "selection": {
+                    "selected_threshold_m": selected["alarm_threshold_m"],
+                    "rule": (
+                        "validation_only lexicographic: maximize timely recall, "
+                        "then recall, minimize false-positive rate, maximize "
+                        "precision, then prefer the highest threshold"
+                    ),
+                    "pooled_metrics": selected["pooled"],
+                },
 
                 "lstm_threshold_sweep":
                     sweep_results,

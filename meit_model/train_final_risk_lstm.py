@@ -5,6 +5,7 @@ import argparse
 import json
 import math
 from pathlib import Path
+from statistics import median
 
 import numpy as np
 import torch
@@ -15,6 +16,9 @@ from meit_model.lstm import LSTMForecaster
 from meit_model.predictor import ForecastPredictor
 from meit_model.train_lstm_cv import CVDataset, make_event_balanced_loader, set_seed
 from meit_model.train_risk_lstm_cv import train_one_epoch_risk
+
+
+REQUIRED_CV_SEEDS = (42, 43, 44)
 
 
 def json_default(value):
@@ -37,33 +41,99 @@ def write_json(path, value):
                                default=json_default), encoding='utf-8')
 
 
+def read_json(path):
+    try:
+        return json.loads(Path(path).read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f'Cannot read valid JSON from {path}: {exc}') from exc
+
+
+def derive_training_recipe(cv_summary_paths, calibration_path, fingerprint):
+    """Build the final recipe only from artifacts for the current dataset."""
+    summaries = [read_json(path) for path in cv_summary_paths]
+    seeds = []
+    best_epochs = []
+    for path, summary in zip(cv_summary_paths, summaries):
+        if summary.get('schema_version') != 2:
+            raise ValueError(f'Legacy CV summary is not accepted: {path}')
+        if summary.get('data_fingerprint') != fingerprint:
+            raise ValueError(f'CV summary was produced from different data: {path}')
+        seed = summary.get('seed')
+        if seed in seeds:
+            raise ValueError(f'Duplicate CV seed {seed}: {path}')
+        seeds.append(seed)
+        folds = summary.get('folds')
+        if not isinstance(folds, list) or len(folds) != 4:
+            raise ValueError(f'CV summary must contain four folds: {path}')
+        for fold in folds:
+            epoch = fold.get('best_epoch') if isinstance(fold, dict) else None
+            if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 1:
+                raise ValueError(f'Invalid best epoch in CV summary: {path}')
+            best_epochs.append(epoch)
+    if tuple(sorted(seeds)) != REQUIRED_CV_SEEDS:
+        raise ValueError('Final recipe requires CV summaries for seeds 42, 43 and 44')
+
+    calibration = read_json(calibration_path)
+    if calibration.get('schema_version') != 2:
+        raise ValueError('Legacy calibration output is not accepted')
+    if calibration.get('data_fingerprint') != fingerprint:
+        raise ValueError('Calibration was produced from different data')
+    if calibration.get('actual_critical_depth_m') != .30:
+        raise ValueError('Calibration critical depth must be 0.30 m')
+    selection = calibration.get('selection')
+    threshold = selection.get('selected_threshold_m') if isinstance(selection, dict) else None
+    if (isinstance(threshold, bool) or not isinstance(threshold, (int, float))
+            or not math.isfinite(threshold) or not 0 < threshold <= .30):
+        raise ValueError('Calibration has no valid selected warning threshold')
+
+    # Round .5 upward. Python round() uses bankers' rounding and would turn
+    # an 18.5-epoch median into 18 instead of the intended 19.
+    epochs = int(math.floor(float(median(best_epochs)) + .5))
+    return {
+        'epochs': epochs,
+        'forecast_warning_depth_m': float(threshold),
+        'cv_seeds': sorted(seeds),
+        'cv_best_epochs': best_epochs,
+        'cv_summary_paths': [str(path) for path in cv_summary_paths],
+        'calibration_path': str(calibration_path),
+        'epoch_selection_rule': 'median of 12 validation best epochs, rounded .5 upward',
+        'warning_threshold_selection_rule': selection.get('rule'),
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-dir', type=Path, default=Path('data/processed'))
     parser.add_argument('--output-dir', type=Path, default=Path('artifacts/final_model'))
-    parser.add_argument('--epochs', type=int, default=19,
-                        help='Final deployment recipe requires 19 epochs')
+    parser.add_argument('--cv-summary', type=Path, action='append', required=True,
+                        help='Repeat for the seed 42, 43 and 44 CV summaries')
+    parser.add_argument('--calibration', type=Path, required=True,
+                        help='Validation-only warning-threshold calibration JSON')
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args(argv)
-    if args.epochs != 19 or args.seed != 42:
-        parser.error('Final deployment recipe requires --epochs 19 --seed 42. '
-                     'Use a separate script for smoke experiments.')
+    if args.seed != 42:
+        parser.error('Final deployment seed must be 42. Use a separate script for smoke experiments.')
     # Refuse reuse, including partially completed runs, to preserve provenance.
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         parser.error('Output directory is not empty; choose a new --output-dir')
 
-    config = dict(input_size=1, input_length=30, hidden_size=64, num_layers=1,
-                  horizon=15, batch_size=128, learning_rate=.001, gradient_clip=1.,
-                  critical_depth_m=.300, underprediction_weight=2.,
-                  max_epochs=args.epochs, seed=args.seed, normalization_version=2)
-    policy = dict(forecast_warning_depth_m=.295,
-                  pressure_critical_equivalent_depth_m=.300,
-                  required_lead_time_min=5, danger_horizon_min=5)
     set_seed(args.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     data = load_development_data(args.data_dir)
     indices = np.arange(len(data.X), dtype=np.int64)
     source = FoldScalerSource(args.data_dir)
+    try:
+        recipe = derive_training_recipe(args.cv_summary, args.calibration, source.fingerprint)
+    except ValueError as exc:
+        parser.error(str(exc))
+    epochs = recipe['epochs']
+    config = dict(input_size=1, input_length=30, hidden_size=64, num_layers=1,
+                  horizon=15, batch_size=128, learning_rate=.001, gradient_clip=1.,
+                  critical_depth_m=.300, underprediction_weight=2.,
+                  max_epochs=epochs, seed=args.seed, normalization_version=2)
+    policy = dict(forecast_warning_depth_m=recipe['forecast_warning_depth_m'],
+                  pressure_critical_equivalent_depth_m=.300,
+                  required_lead_time_min=5, danger_horizon_min=5)
     scaler = source.fit(indices)
     scaler['scope'] = 'full_development_training_inputs_only'
     scaled = rescale_data(data, load_scaler(args.data_dir), scaler)
@@ -75,20 +145,21 @@ def main(argv=None):
         training_scope='full_development_train_plus_validation',
         data_fingerprint=source.fingerprint, train_indices_sha256=indices_digest(indices),
         development_window_count=len(indices), sealed_test_used=False,
-        epoch_selection_rule='CV v2 seeds 42/43/44 best-epoch median 18.5 rounded to 19',
-        cv_best_epochs=[39, 15, 17, 21, 28, 15, 14, 27, 33, 11, 17, 20],
-        fixed_epoch_rule_applied=args.epochs == 19,
-        deployment_recipe_applied=args.epochs == 19 and args.seed == 42,
+        epoch_selection_rule=recipe['epoch_selection_rule'],
+        warning_threshold_selection_rule=recipe['warning_threshold_selection_rule'],
+        cv_seeds=recipe['cv_seeds'], cv_best_epochs=recipe['cv_best_epochs'],
+        cv_summary_paths=recipe['cv_summary_paths'], calibration_path=recipe['calibration_path'],
+        deployment_recipe_applied=True,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_json(args.output_dir / 'training_config.json',
                dict(config=config, policy=policy, scaler=scaler, **provenance))
     print('FINAL RISK-AWARE LSTM TRAINING', flush=True)
-    print(f'Device: {device}; epochs: {args.epochs}; seed: {args.seed}', flush=True)
+    print(f'Device: {device}; epochs: {epochs}; seed: {args.seed}', flush=True)
     print(f'Development windows: {len(indices)}; scaler: {scaler}', flush=True)
     print('No validation selection or sealed test evaluation.', flush=True)
     history = []
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(1, epochs + 1):
         loss = train_one_epoch_risk(
             model, loader, optimizer, scaler, device,
             config['gradient_clip'], config['critical_depth_m'], config['underprediction_weight'])
@@ -96,12 +167,12 @@ def main(argv=None):
             raise RuntimeError('Nonfinite training loss; no final checkpoint saved')
         history.append(dict(epoch=epoch, risk_loss=loss))
         write_json(args.output_dir / 'history.json', history)
-        print(f'Epoch {epoch:02d}/{args.epochs} | risk loss={loss:.8f}', flush=True)
+        print(f'Epoch {epoch:02d}/{epochs} | risk loss={loss:.8f}', flush=True)
 
     checkpoint_path = args.output_dir / 'final_model.pt'
     checkpoint = dict(model_state_dict=model.state_dict(), optimizer_state_dict=optimizer.state_dict(),
                       scaler=scaler, config=config, policy=policy, normalization_version=2,
-                      epoch=args.epochs, training_epochs=args.epochs, seed=args.seed,
+                      epoch=epochs, training_epochs=epochs, seed=args.seed,
                       loss='risk_aware_asymmetric_mae_valid_mean_v2', **provenance)
     # Check predictor compatibility before publishing the final filename.
     pending = args.output_dir / 'pending_model.pt'
@@ -113,7 +184,7 @@ def main(argv=None):
         raise RuntimeError(f'Saved predictor smoke failed: {result.status}; {result.message}')
     pending.replace(checkpoint_path)
     write_json(args.output_dir / 'training_summary.json',
-               dict(**provenance, training_epochs=args.epochs, seed=args.seed,
+               dict(**provenance, training_epochs=epochs, seed=args.seed,
                     checkpoint=str(checkpoint_path), predictor_smoke_status=result.status))
     print(f'FINAL TRAINING COMPLETE: {checkpoint_path}', flush=True)
     return 0

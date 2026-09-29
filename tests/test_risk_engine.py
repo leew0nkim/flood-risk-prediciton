@@ -5,7 +5,10 @@ from meit_model.risk import RiskEngine
 
 class RiskEngineTests(unittest.TestCase):
     def test_led_policy_and_external_reference(self):
-        engine = RiskEngine()
+        # A calibrated threshold is explicit; the uncalibrated default is the
+        # canonical 0.30 m critical depth.
+        self.assertEqual(RiskEngine().forecast_warning_depth_m, .30)
+        engine = RiskEngine(forecast_warning_depth_m=.295)
         cases = [
             (.20, [.20] * 15, 'SAFE', None, None),
             (.26, [.26] * 15, 'WARNING', None, None),
@@ -164,10 +167,11 @@ class FuturePressurePolicyTests(unittest.TestCase):
 
 class CurrentCrossingTests(unittest.TestCase):
     def test_external_times_independently_include_current_depth(self):
+        engine = RiskEngine(forecast_warning_depth_m=.295)
         for status, values in [('READY', [.2] * 15), ('WARMUP', None)]:
             for depth, warning, critical in [(.289, None, None), (.29, None, None), (.295, 0, None), (.30, 0, 0)]:
                 with self.subTest(status=status, depth=depth):
-                    r = RiskEngine().evaluate(depth, ForecastResult(status, values, None))
+                    r = engine.evaluate(depth, ForecastResult(status, values, None))
                     self.assertEqual((r.t_external_warning_min, r.t_external_critical_min), (warning, critical))
 
     def test_current_pressure_reached_without_usable_forecast(self):

@@ -36,7 +36,7 @@ outside-higher future crossing.
 ## Result contract
 
 - t_critical_min: conditional equivalent-depth .30m time used for future LED risk.
-- t_external_warning_min: external .29m time, diagnostic only.
+- t_external_warning_min: configured external forecast-threshold time, diagnostic only.
 - t_external_critical_min: external .30m time, diagnostic only.
 - current_state / forecast_state: independent current/future severity.
 - current_external_depth_m / current_internal_depth_m / current_equivalent_depth_m:

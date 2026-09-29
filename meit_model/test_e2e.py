@@ -38,7 +38,9 @@ live = LiveForecastBuffer(
 risk_engine = RiskEngine(
     warning_current_depth_m=0.25,
     external_critical_depth_m=0.30,
-    forecast_warning_depth_m=0.295,
+    # Use the canonical critical threshold until a calibration artifact for
+    # the current data fingerprint is explicitly supplied.
+    forecast_warning_depth_m=0.30,
     danger_horizon_min=5,
 
     internal_warning_depth_m=0.25,

@@ -563,7 +563,13 @@ def main():
     ) as f:
 
         json.dump(
-            results,
+            {
+                "schema_version": 2,
+                "data_fingerprint": scaling_source.fingerprint,
+                "seed": config["seed"],
+                "config": config,
+                "folds": results,
+            },
             f,
             ensure_ascii=False,
             indent=2,
