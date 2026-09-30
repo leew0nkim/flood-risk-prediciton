@@ -81,7 +81,7 @@ class ElectronicsSerial:
             self.last_event = {'type': 'BOARD_STATE', 'value': state}
         elif text.startswith('LED ='):
             led = text.partition('=')[2].strip()
-            if led not in {'GREEN', 'YELLOW', 'RED', 'OFF', 'UNKNOWN'}:
+            if led not in {'BLUE', 'GREEN', 'YELLOW', 'RED', 'OFF', 'UNKNOWN'}:
                 return False
             self.board_reported_led = led
             self.last_event = {'type': 'BOARD_LED', 'value': led}

@@ -14,6 +14,7 @@ def _wire_payload(result, *, mock: bool) -> dict:
     """Small newline-delimited response for the Arduino receive buffer."""
     return {
         'state': result.state,
+        'led': result.led,
         'mock': mock,
         'command': result.command,
     }
@@ -38,7 +39,7 @@ def main(argv=None):
     parser.add_argument('--danger-cm', type=float, default=3.0)
     parser.add_argument('--open-cm', type=float, default=3.0)
     parser.add_argument('--warning-gap-cm', type=float, default=2.0)
-    parser.add_argument('--open-gap-cm', type=float, default=3.0)
+    parser.add_argument('--open-gap-cm', type=float, default=4.0)
     parser.add_argument('--internal-warning-cm', type=float, default=2.5)
     parser.add_argument('--internal-limit-cm', type=float, default=3.0)
     args = parser.parse_args(argv)

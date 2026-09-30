@@ -36,15 +36,19 @@ class ScaleIntegrationResult:
     decision_basis: str = 'CURRENT_DEPTH_ONLY'
     prediction_source: str = 'none'
 
+    @property
+    def led(self) -> str:
+        return {'SAFE': 'BLUE', 'WARNING': 'GREEN', 'DANGER': 'RED'}[self.state]
+
     def to_dict(self) -> dict:
-        return asdict(self)
+        return {**asdict(self), 'led': self.led}
 
 
 class ScaleIntegrationModel:
     """Current-level policy for the physical scale model.
 
-    Both sensors use the same warning/danger levels. Opening is controlled only
-    by the current external level, as required for the electronics bench test.
+    LED state and opening use only the outside-minus-inside depth gap.
+    Individual depth states are diagnostics only.
     The class does not import, load, or invoke the LSTM or the production
     RiskEngine.
     """
@@ -58,7 +62,7 @@ class ScaleIntegrationModel:
         internal_warning_depth_m: float = 0.025,
         internal_limit_depth_m: float = 0.03,
         warning_depth_gap_m: float = 0.02,
-        open_depth_gap_m: float = 0.03,
+        open_depth_gap_m: float = 0.04,
     ):
         thresholds = (
             warning_depth_m,
@@ -121,7 +125,6 @@ class ScaleIntegrationModel:
             self.internal_warning_depth_m,
             self.internal_limit_depth_m,
         )
-        state = max((external_state, internal_state), key=STATE_ORDER.__getitem__)
         # Millimetre precision is more than the scale sensor can resolve and
         # avoids binary-float boundary surprises at exactly 2/4 cm.
         gap = round(external - internal, 9)
@@ -130,27 +133,16 @@ class ScaleIntegrationModel:
             self.warning_depth_gap_m,
             self.open_depth_gap_m,
         )
-        state = max((state, gap_state), key=STATE_ORDER.__getitem__)
-        # Scale-model-only rule: use the agreed 7 cm outside trigger while the
-        # paired inside sensor confirms that a meaningful level gap remains.
-        open_signal = (
-            external >= self.open_depth_m
-            and internal < self.internal_limit_depth_m
-            and gap >= self.open_depth_gap_m
-        )
-        close_signal = (
-            internal >= self.internal_limit_depth_m
-            or external < self.danger_depth_m
-        )
-
-        if internal >= self.internal_limit_depth_m:
-            # The 3 cm inside limit is a hard stop. CLOSE is idempotent and is
-            # sent even if the board's active feedback is stale or false.
+        state = gap_state
+        open_signal = gap >= self.open_depth_gap_m
+        # Preserve the existing closing rule; opening always takes priority.
+        close_signal = external < self.danger_depth_m
+        if open_signal:
+            command = 'OPEN'
+        elif equalization_active and close_signal:
             command = 'CLOSE'
-        elif equalization_active:
-            command = 'CLOSE' if close_signal else 'NONE'
         else:
-            command = 'OPEN' if open_signal else 'NONE'
+            command = 'NONE'
 
         return ScaleIntegrationResult(
             state=state,
@@ -175,7 +167,7 @@ class ScaleIntegrationModel:
 
 
 class StableScaleIntegrationModel:
-    """Median-filtered scale policy for manually poured demonstration water."""
+    """Scale policy using five-sample medians and a three-sample startup gate."""
 
     def __init__(self, policy=None, *, window_samples: int = 5, minimum_samples: int = 3):
         if (isinstance(window_samples, bool) or not isinstance(window_samples, int)
@@ -210,18 +202,11 @@ class StableScaleIntegrationModel:
             equalization_active=equalization_active,
         )
         ready = len(self.samples) >= self.minimum_samples
-        safety_override = equalization_active and internal >= self.policy.internal_limit_depth_m
         # A single splash or startup sample may change the LED diagnostic, but
-        # it cannot actuate opening before enough paired readings exist. The
-        # raw 3 cm inside limit bypasses the filter so overflow prevention is
-        # never delayed by older low readings.
+        # it cannot actuate opening before enough paired readings exist.
         return replace(
             result,
-            state='DANGER' if safety_override else result.state,
-            internal_state='DANGER' if safety_override else result.internal_state,
-            close_signal=True if safety_override else result.close_signal,
-            command='CLOSE' if safety_override else (result.command if ready else 'NONE'),
+            command=result.command if ready else 'NONE',
             filter_sample_count=len(self.samples),
             filter_ready=ready,
-            safety_override=safety_override,
         )
