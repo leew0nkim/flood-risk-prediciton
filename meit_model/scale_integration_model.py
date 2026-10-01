@@ -32,6 +32,11 @@ class ScaleIntegrationResult:
     open_depth_gap_m: float
     filter_sample_count: int = 1
     filter_ready: bool = True
+    indicator_window_samples: int = 1
+    actuation_window_samples: int = 1
+    actuation_external_depth_m: float | None = None
+    actuation_internal_depth_m: float | None = None
+    actuation_depth_gap_m: float | None = None
     safety_override: bool = False
     decision_basis: str = 'CURRENT_DEPTH_GAP'
     prediction_source: str = 'none'
@@ -167,17 +172,34 @@ class ScaleIntegrationModel:
 
 
 class StableScaleIntegrationModel:
-    """Scale policy using five-sample medians and a three-sample startup gate."""
+    """Fast LED indication with separately filtered mechanical actuation."""
 
-    def __init__(self, policy=None, *, window_samples: int = 5, minimum_samples: int = 3):
+    def __init__(
+        self,
+        policy=None,
+        *,
+        window_samples: int = 5,
+        minimum_samples: int = 3,
+        indicator_window_samples: int = 3,
+    ):
         if (isinstance(window_samples, bool) or not isinstance(window_samples, int)
                 or window_samples < 1 or window_samples % 2 == 0):
             raise ValueError('window_samples must be a positive odd integer')
         if (isinstance(minimum_samples, bool) or not isinstance(minimum_samples, int)
                 or not 1 <= minimum_samples <= window_samples):
             raise ValueError('minimum_samples must be within the filter window')
+        if (isinstance(indicator_window_samples, bool)
+                or not isinstance(indicator_window_samples, int)
+                or indicator_window_samples < 1
+                or indicator_window_samples % 2 == 0
+                or indicator_window_samples > window_samples):
+            raise ValueError(
+                'indicator_window_samples must be a positive odd integer '
+                'within the filter window')
         self.policy = policy or ScaleIntegrationModel()
         self.minimum_samples = minimum_samples
+        self.indicator_window_samples = indicator_window_samples
+        self.window_samples = window_samples
         self.samples = deque(maxlen=window_samples)
 
     def update(
@@ -194,19 +216,34 @@ class StableScaleIntegrationModel:
         if not isinstance(equalization_active, bool):
             raise ValueError('equalization_active must be bool')
         self.samples.append((external, internal))
-        filtered_external = median(sample[0] for sample in self.samples)
-        filtered_internal = median(sample[1] for sample in self.samples)
-        result = self.policy.evaluate(
-            filtered_external,
-            filtered_internal,
+        indicator_samples = list(self.samples)[-self.indicator_window_samples:]
+        indicator_external = median(sample[0] for sample in indicator_samples)
+        indicator_internal = median(sample[1] for sample in indicator_samples)
+        indicator_result = self.policy.evaluate(
+            indicator_external,
+            indicator_internal,
+            equalization_active=equalization_active,
+        )
+        actuation_external = median(sample[0] for sample in self.samples)
+        actuation_internal = median(sample[1] for sample in self.samples)
+        actuation_result = self.policy.evaluate(
+            actuation_external,
+            actuation_internal,
             equalization_active=equalization_active,
         )
         ready = len(self.samples) >= self.minimum_samples
-        # A single splash or startup sample may change the LED diagnostic, but
-        # it cannot actuate opening before enough paired readings exist.
+        # The LED uses the shorter indicator window. Mechanical commands retain
+        # the larger median window and startup gate so one splash cannot open.
         return replace(
-            result,
-            command=result.command if ready else 'NONE',
+            indicator_result,
+            open_signal=actuation_result.open_signal,
+            close_signal=actuation_result.close_signal,
+            command=actuation_result.command if ready else 'NONE',
             filter_sample_count=len(self.samples),
             filter_ready=ready,
+            indicator_window_samples=self.indicator_window_samples,
+            actuation_window_samples=self.window_samples,
+            actuation_external_depth_m=actuation_external,
+            actuation_internal_depth_m=actuation_internal,
+            actuation_depth_gap_m=actuation_result.depth_gap_m,
         )

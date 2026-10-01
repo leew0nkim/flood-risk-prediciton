@@ -42,6 +42,12 @@ def main(argv=None):
     parser.add_argument('--open-gap-cm', type=float, default=4.0)
     parser.add_argument('--internal-warning-cm', type=float, default=2.5)
     parser.add_argument('--internal-limit-cm', type=float, default=3.0)
+    parser.add_argument('--indicator-window-samples', type=int, default=3,
+                        help='Odd median window for state/LED (default: 3)')
+    parser.add_argument('--actuation-window-samples', type=int, default=5,
+                        help='Odd median window for OPEN/CLOSE (default: 5)')
+    parser.add_argument('--minimum-actuation-samples', type=int, default=3,
+                        help='Valid pairs required before OPEN/CLOSE (default: 3)')
     args = parser.parse_args(argv)
 
     if args.baudrate <= 0 or args.max_messages < 0:
@@ -61,7 +67,15 @@ def main(argv=None):
         )
     except ValueError as exc:
         parser.error(str(exc))
-    model = StableScaleIntegrationModel(policy)
+    try:
+        model = StableScaleIntegrationModel(
+            policy,
+            window_samples=args.actuation_window_samples,
+            minimum_samples=args.minimum_actuation_samples,
+            indicator_window_samples=args.indicator_window_samples,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.dry_run:
         try:
             # Dry-run represents a stable level, so feed the same paired
@@ -89,7 +103,9 @@ def main(argv=None):
             f'[POLICY] control=FILTERED_DEPTH_GAP '
             f'warning_gap={args.warning_gap_cm:g}cm '
             f'danger/open_gap={args.open_gap_cm:g}cm '
-            f'close_if_active_and_external_below={args.danger_cm:g}cm',
+            f'close_if_active_and_external_below={args.danger_cm:g}cm '
+            f'indicator_window={args.indicator_window_samples} '
+            f'actuation_window={args.actuation_window_samples}',
             file=sys.stderr,
             flush=True,
         )
@@ -115,9 +131,11 @@ def main(argv=None):
             print(
                 f'[LIVE] raw_external={packet.external_depth_m:.3f}m '
                 f'raw_internal={packet.internal_depth_m:.3f}m '
-                f'filtered_external={result.external_depth_m:.3f}m '
-                f'filtered_internal={result.internal_depth_m:.3f}m '
-                f'gap={result.depth_gap_m:.3f}m samples={result.filter_sample_count} '
+                f'indicator_external={result.external_depth_m:.3f}m '
+                f'indicator_internal={result.internal_depth_m:.3f}m '
+                f'indicator_gap={result.depth_gap_m:.3f}m '
+                f'actuation_gap={result.actuation_depth_gap_m:.3f}m '
+                f'samples={result.filter_sample_count} '
                 f'ready={str(result.filter_ready).lower()}',
                 file=sys.stderr,
                 flush=True,

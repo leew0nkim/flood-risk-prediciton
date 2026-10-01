@@ -59,6 +59,18 @@ class ScaleIntegrationModelTests(unittest.TestCase):
         self.assertEqual(result.state, 'DANGER')
         self.assertEqual(result.command, 'OPEN')
 
+    def test_three_sample_indicator_reports_warning_before_five_sample_filter(self):
+        stable = StableScaleIntegrationModel()
+        for _ in range(5):
+            stable.update(.01, 0)
+        self.assertEqual(stable.update(.03, 0).state, 'SAFE')
+        fast_warning = stable.update(.03, 0)
+        self.assertEqual(fast_warning.state, 'WARNING')
+        self.assertEqual(fast_warning.led, 'GREEN')
+        self.assertEqual(fast_warning.command, 'NONE')
+        self.assertAlmostEqual(fast_warning.depth_gap_m, .03)
+        self.assertAlmostEqual(fast_warning.actuation_depth_gap_m, .01)
+
     def test_existing_external_low_close_rule_is_preserved(self):
         self.assertEqual(self.model.evaluate(.02, .0, equalization_active=True).command, 'CLOSE')
 
@@ -74,6 +86,10 @@ class ScaleIntegrationModelTests(unittest.TestCase):
             ScaleIntegrationModel(warning_depth_gap_m=.03, open_depth_gap_m=.03)
         with self.assertRaises(ValueError):
             StableScaleIntegrationModel(window_samples=4)
+        with self.assertRaises(ValueError):
+            StableScaleIntegrationModel(indicator_window_samples=2)
+        with self.assertRaises(ValueError):
+            StableScaleIntegrationModel(window_samples=3, indicator_window_samples=5)
 
     def test_dry_run_outputs_danger_and_open_at_four_cm(self):
         output = StringIO()
