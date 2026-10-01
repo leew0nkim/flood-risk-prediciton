@@ -188,7 +188,9 @@ python -m meit_model.run_electronics_integration --mode accumulate --port COM3
 | 정상 센서 JSON | `SENSOR_DATA` | `board_sensor_status=OK` |
 | `AI DATA: ...` | `AI_ECHO` | `board_echo_status=COMPLETE/TRUNCATED` |
 | `STATE = SAFE/WARNING/DANGER/UNKNOWN` | `BOARD_STATE` | `board_reported_state` |
-| `LED = GREEN/YELLOW/RED/OFF/UNKNOWN` | `BOARD_LED` | `board_reported_led` |
+| `LED = BLUE/GREEN/YELLOW/RED/OFF/UNKNOWN` | `BOARD_LED` | `board_reported_led` |
+| `BUZZER = ON/OFF/UNKNOWN` | `BOARD_BUZZER` | `board_reported_buzzer` |
+| `GATE = OPEN/CLOSED/OPENING/CLOSING/UNKNOWN` | `BOARD_GATE` | `board_reported_gate` |
 
 `serial_input_error`는 필수 센서 필드가 없는 JSON, 손상된 JSON, 알 수 없는 문자열에만 설정된다.
 `serial_input_event`는 polling timeout이 발생해도 가장 최근에 실제로 받은 이벤트를 유지한다.

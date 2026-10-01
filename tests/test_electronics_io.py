@@ -50,11 +50,12 @@ class ElectronicsIOTests(unittest.TestCase):
         connection.serial.readline.side_effect=[
             b'Arduino Ready\n', b'SENSOR ERROR\n',
             b'AI DATA: {"state":"SAFE"\n', b'STATE = SAFE\n',
-            b'LED = GREEN\n', sensor,
+            b'LED = GREEN\n', b'BUZZER = ON\n', b'GATE = OPEN\n', sensor,
         ]
         expected=[
             ('BOARD_READY',None), ('SENSOR_ERROR',None), ('AI_ECHO',None),
-            ('BOARD_STATE',None), ('BOARD_LED',None), ('SENSOR_DATA',.164),
+            ('BOARD_STATE',None), ('BOARD_LED',None), ('BOARD_BUZZER',None),
+            ('BOARD_GATE',None), ('SENSOR_DATA',.164),
         ]
         for event_type,external in expected:
             with self.subTest(event_type=event_type):
@@ -67,6 +68,8 @@ class ElectronicsIOTests(unittest.TestCase):
         self.assertEqual(status['board_sensor_status'],'OK')
         self.assertEqual(status['board_reported_state'],'SAFE')
         self.assertEqual(status['board_reported_led'],'GREEN')
+        self.assertEqual(status['board_reported_buzzer'],'ON')
+        self.assertEqual(status['board_reported_gate'],'OPEN')
         self.assertEqual(status['board_echo_status'],'TRUNCATED')
         self.assertIsNone(status['serial_input_error'])
 

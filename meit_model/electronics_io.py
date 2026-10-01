@@ -37,6 +37,8 @@ class ElectronicsSerial:
         self.board_sensor_status = 'UNKNOWN'
         self.board_reported_state = None
         self.board_reported_led = None
+        self.board_reported_buzzer = None
+        self.board_reported_gate = None
         self.board_echo_status = None
 
     def _ensure_input_state(self):
@@ -45,7 +47,8 @@ class ElectronicsSerial:
             'pending': bytearray(), 'discarding': False, 'last_error': None,
             'last_line': None, 'last_event': None, 'board_ready': False,
             'board_sensor_status': 'UNKNOWN', 'board_reported_state': None,
-            'board_reported_led': None, 'board_echo_status': None,
+            'board_reported_led': None, 'board_reported_buzzer': None,
+            'board_reported_gate': None, 'board_echo_status': None,
         }
         for name, value in defaults.items():
             if not hasattr(self, name):
@@ -85,6 +88,18 @@ class ElectronicsSerial:
                 return False
             self.board_reported_led = led
             self.last_event = {'type': 'BOARD_LED', 'value': led}
+        elif text.startswith('BUZZER ='):
+            buzzer = text.partition('=')[2].strip()
+            if buzzer not in {'ON', 'OFF', 'UNKNOWN'}:
+                return False
+            self.board_reported_buzzer = buzzer
+            self.last_event = {'type': 'BOARD_BUZZER', 'value': buzzer}
+        elif text.startswith('GATE ='):
+            gate = text.partition('=')[2].strip()
+            if gate not in {'OPEN', 'CLOSED', 'OPENING', 'CLOSING', 'UNKNOWN'}:
+                return False
+            self.board_reported_gate = gate
+            self.last_event = {'type': 'BOARD_GATE', 'value': gate}
         else:
             return False
         self.last_error = None
@@ -177,6 +192,8 @@ class ElectronicsSerial:
             'board_sensor_status': self.board_sensor_status,
             'board_reported_state': self.board_reported_state,
             'board_reported_led': self.board_reported_led,
+            'board_reported_buzzer': self.board_reported_buzzer,
+            'board_reported_gate': self.board_reported_gate,
             'board_echo_status': self.board_echo_status,
             'serial_input_error': self.last_error,
         }
