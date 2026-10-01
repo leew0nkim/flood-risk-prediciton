@@ -33,7 +33,7 @@ class ScaleIntegrationResult:
     filter_sample_count: int = 1
     filter_ready: bool = True
     safety_override: bool = False
-    decision_basis: str = 'CURRENT_DEPTH_ONLY'
+    decision_basis: str = 'CURRENT_DEPTH_GAP'
     prediction_source: str = 'none'
 
     @property

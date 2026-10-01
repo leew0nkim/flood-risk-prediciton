@@ -153,7 +153,7 @@ class ScaleIntegrationModelTests(unittest.TestCase):
         self.assertEqual(code, 0)
         payload = json.loads(output.getvalue())
         self.assertTrue(payload['open_signal'])
-        self.assertEqual(payload['decision_basis'], 'CURRENT_DEPTH_ONLY')
+        self.assertEqual(payload['decision_basis'], 'CURRENT_DEPTH_GAP')
         self.assertEqual(payload['prediction_source'], 'none')
 
 

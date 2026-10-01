@@ -86,10 +86,10 @@ def main(argv=None):
     try:
         transport = ElectronicsSerial(args.port, args.baudrate, timeout=0.1)
         print(
-            f'[POLICY] warning={args.warning_cm:g}cm danger={args.danger_cm:g}cm '
-            f'open={args.open_cm:g}cm warning_gap={args.warning_gap_cm:g}cm '
+            f'[POLICY] control=FILTERED_DEPTH_GAP '
+            f'warning_gap={args.warning_gap_cm:g}cm '
             f'danger/open_gap={args.open_gap_cm:g}cm '
-            f'internal_limit={args.internal_limit_cm:g}cm',
+            f'close_if_active_and_external_below={args.danger_cm:g}cm',
             file=sys.stderr,
             flush=True,
         )
