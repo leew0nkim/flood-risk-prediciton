@@ -13,15 +13,19 @@ LED와 경보 상태는 최근 3개 실내·외 수위쌍의 중앙값으로 빠
 | 3개 경보 필터 수위차 | `state` | `led` |
 | --- | --- | --- |
 | 2cm 미만 | `SAFE` | `BLUE` |
-| 2cm 이상, 3.5cm 미만 | `WARNING` | `GREEN` |
-| 3.5cm 이상 | `DANGER` | `RED` |
+| 2cm 이상, 4cm 미만 | `WARNING` | `GREEN` |
+| 4cm 이상 | `DANGER` | `RED` |
 
-`command=OPEN`은 별도의 5개 모터 필터 수위차가 3.5cm 이상일 때만 전송한다.
+파랑과 초록이 반복되는 것을 막기 위해 0.5cm 히스테리시스를 적용한다. 초록색은 2cm에서
+켜지고 수위차가 1.5cm 미만으로 내려가야 파란색으로 돌아간다. 빨간색은 4cm에서 켜지고
+3.5cm 미만으로 내려가면 초록색으로 전환된다.
+
+`command=OPEN`은 별도의 5개 모터 필터 수위차가 4cm 이상일 때만 전송한다.
 
 프로그램 시작 후 정상 수위쌍을 3개 받기 전에는 상태와 LED 값은 계산하지만 명령은 `NONE`으로
-제한한다. 이후 5개 모터 필터의 수위차가 3.5cm 이상이면 장치 상태와 관계없이 `OPEN`을 보낸다.
+제한한다. 이후 5개 모터 필터의 수위차가 4cm 이상이면 장치 상태와 관계없이 `OPEN`을 보낸다.
 
-현재 폐쇄 규칙은 수위차가 3.5cm 미만이고, 장치가 열려 있다고 아두이노가
+현재 폐쇄 규칙은 수위차가 4cm 미만이고, 장치가 열려 있다고 아두이노가
 `equalization_active=true`로 보고하며, 필터 외부수위가 3cm 미만일 때 `CLOSE`를 보내는
 것이다. 그 외에는 `NONE`이다. 실내 3cm 자체는 현재 pull된 정책에서 즉시 폐쇄 조건이 아니다.
 
@@ -49,7 +53,7 @@ LED와 경보 상태는 최근 3개 실내·외 수위쌍의 중앙값으로 빠
 ```bash
 python -m meit_model.run_scale_integration --dry-run --external-depth-cm 1.9 --internal-depth-cm 0
 python -m meit_model.run_scale_integration --dry-run --external-depth-cm 2 --internal-depth-cm 0
-python -m meit_model.run_scale_integration --dry-run --external-depth-cm 3.5 --internal-depth-cm 0
+python -m meit_model.run_scale_integration --dry-run --external-depth-cm 4 --internal-depth-cm 0
 ```
 
 실제 센서를 사용하되 명령을 강제로 `NONE`으로 막고 10건을 확인한다.
@@ -72,7 +76,8 @@ python -m meit_model.run_scale_integration --dry-run --external-depth-cm 3.5 --i
 ```bash
 /opt/anaconda3/bin/python -m meit_model.run_scale_integration \
   --port /dev/cu.usbmodemXXXX --baudrate 9600 \
-  --warning-gap-cm 2 --open-gap-cm 3.5 --danger-cm 3
+  --warning-gap-cm 2 --open-gap-cm 4 --danger-cm 3 \
+  --indicator-hysteresis-cm 0.5
 ```
 
 Terminal에는 다음이 표시된다.

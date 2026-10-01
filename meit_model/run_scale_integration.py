@@ -39,11 +39,13 @@ def main(argv=None):
     parser.add_argument('--danger-cm', type=float, default=3.0)
     parser.add_argument('--open-cm', type=float, default=3.0)
     parser.add_argument('--warning-gap-cm', type=float, default=2.0)
-    parser.add_argument('--open-gap-cm', type=float, default=3.5)
+    parser.add_argument('--open-gap-cm', type=float, default=4.0)
     parser.add_argument('--internal-warning-cm', type=float, default=2.5)
     parser.add_argument('--internal-limit-cm', type=float, default=3.0)
     parser.add_argument('--indicator-window-samples', type=int, default=3,
                         help='Odd median window for state/LED (default: 3)')
+    parser.add_argument('--indicator-hysteresis-cm', type=float, default=0.5,
+                        help='Gap decrease required before LED de-escalation (default: 0.5)')
     parser.add_argument('--actuation-window-samples', type=int, default=5,
                         help='Odd median window for OPEN/CLOSE (default: 5)')
     parser.add_argument('--minimum-actuation-samples', type=int, default=3,
@@ -73,6 +75,7 @@ def main(argv=None):
             window_samples=args.actuation_window_samples,
             minimum_samples=args.minimum_actuation_samples,
             indicator_window_samples=args.indicator_window_samples,
+            indicator_hysteresis_m=args.indicator_hysteresis_cm / 100,
         )
     except ValueError as exc:
         parser.error(str(exc))
@@ -105,6 +108,7 @@ def main(argv=None):
             f'danger/open_gap={args.open_gap_cm:g}cm '
             f'close_if_active_and_external_below={args.danger_cm:g}cm '
             f'indicator_window={args.indicator_window_samples} '
+            f'indicator_hysteresis={args.indicator_hysteresis_cm:g}cm '
             f'actuation_window={args.actuation_window_samples}',
             file=sys.stderr,
             flush=True,

@@ -33,6 +33,7 @@ class ScaleIntegrationResult:
     filter_sample_count: int = 1
     filter_ready: bool = True
     indicator_window_samples: int = 1
+    indicator_hysteresis_m: float = 0.0
     actuation_window_samples: int = 1
     actuation_external_depth_m: float | None = None
     actuation_internal_depth_m: float | None = None
@@ -67,7 +68,7 @@ class ScaleIntegrationModel:
         internal_warning_depth_m: float = 0.025,
         internal_limit_depth_m: float = 0.03,
         warning_depth_gap_m: float = 0.02,
-        open_depth_gap_m: float = 0.035,
+        open_depth_gap_m: float = 0.04,
     ):
         thresholds = (
             warning_depth_m,
@@ -131,7 +132,7 @@ class ScaleIntegrationModel:
             self.internal_limit_depth_m,
         )
         # Millimetre precision is more than the scale sensor can resolve and
-        # avoids binary-float boundary surprises at exactly 2/3.5 cm.
+        # avoids binary-float boundary surprises at exactly 2/4 cm.
         gap = round(external - internal, 9)
         gap_state = self._state(
             max(0.0, gap),
@@ -181,7 +182,9 @@ class StableScaleIntegrationModel:
         window_samples: int = 5,
         minimum_samples: int = 3,
         indicator_window_samples: int = 3,
+        indicator_hysteresis_m: float = 0.005,
     ):
+        resolved_policy = policy or ScaleIntegrationModel()
         if (isinstance(window_samples, bool) or not isinstance(window_samples, int)
                 or window_samples < 1 or window_samples % 2 == 0):
             raise ValueError('window_samples must be a positive odd integer')
@@ -196,11 +199,49 @@ class StableScaleIntegrationModel:
             raise ValueError(
                 'indicator_window_samples must be a positive odd integer '
                 'within the filter window')
-        self.policy = policy or ScaleIntegrationModel()
+        if (isinstance(indicator_hysteresis_m, bool)
+                or not isinstance(indicator_hysteresis_m, (int, float))
+                or not math.isfinite(indicator_hysteresis_m)
+                or indicator_hysteresis_m < 0
+                or indicator_hysteresis_m > resolved_policy.warning_depth_gap_m
+                or indicator_hysteresis_m > (
+                    resolved_policy.open_depth_gap_m
+                    - resolved_policy.warning_depth_gap_m)):
+            raise ValueError('indicator_hysteresis_m is incompatible with gap thresholds')
+        self.policy = resolved_policy
         self.minimum_samples = minimum_samples
         self.indicator_window_samples = indicator_window_samples
+        self.indicator_hysteresis_m = float(indicator_hysteresis_m)
+        self.indicator_state = None
         self.window_samples = window_samples
         self.samples = deque(maxlen=window_samples)
+
+    def _stable_indicator_state(self, gap_m: float) -> str:
+        gap = max(0.0, gap_m)
+        warning_on = self.policy.warning_depth_gap_m
+        danger_on = self.policy.open_depth_gap_m
+        warning_off = max(0.0, warning_on - self.indicator_hysteresis_m)
+        danger_off = max(warning_on, danger_on - self.indicator_hysteresis_m)
+        previous = self.indicator_state
+
+        if previous == 'DANGER':
+            if gap >= danger_off:
+                state = 'DANGER'
+            elif gap >= warning_off:
+                state = 'WARNING'
+            else:
+                state = 'SAFE'
+        elif previous == 'WARNING':
+            if gap >= danger_on:
+                state = 'DANGER'
+            elif gap >= warning_off:
+                state = 'WARNING'
+            else:
+                state = 'SAFE'
+        else:
+            state = self.policy._state(gap, warning_on, danger_on)
+        self.indicator_state = state
+        return state
 
     def update(
         self,
@@ -224,6 +265,7 @@ class StableScaleIntegrationModel:
             indicator_internal,
             equalization_active=equalization_active,
         )
+        indicator_state = self._stable_indicator_state(indicator_result.depth_gap_m)
         actuation_external = median(sample[0] for sample in self.samples)
         actuation_internal = median(sample[1] for sample in self.samples)
         actuation_result = self.policy.evaluate(
@@ -236,12 +278,15 @@ class StableScaleIntegrationModel:
         # the larger median window and startup gate so one splash cannot open.
         return replace(
             indicator_result,
+            state=indicator_state,
+            gap_state=indicator_state,
             open_signal=actuation_result.open_signal,
             close_signal=actuation_result.close_signal,
             command=actuation_result.command if ready else 'NONE',
             filter_sample_count=len(self.samples),
             filter_ready=ready,
             indicator_window_samples=self.indicator_window_samples,
+            indicator_hysteresis_m=self.indicator_hysteresis_m,
             actuation_window_samples=self.window_samples,
             actuation_external_depth_m=actuation_external,
             actuation_internal_depth_m=actuation_internal,

@@ -18,14 +18,14 @@ class ScaleIntegrationModelTests(unittest.TestCase):
         for internal in (0.0, .03, .50):
             for active in (False, True):
                 for gap, expected in ((.0199, 'SAFE'), (.02, 'WARNING'), (.03, 'WARNING'),
-                                      (.0349, 'WARNING'), (.035, 'DANGER'), (.04, 'DANGER')):
+                                      (.0399, 'WARNING'), (.04, 'DANGER'), (.05, 'DANGER')):
                     with self.subTest(internal=internal, active=active, gap=gap):
                         result = self.model.evaluate(internal + gap, internal,
                                                      equalization_active=active)
                         self.assertEqual(result.state, expected)
                         self.assertEqual(result.led, {'SAFE': 'BLUE', 'WARNING': 'GREEN', 'DANGER': 'RED'}[expected])
-                        self.assertEqual(result.open_signal, gap >= .035)
-                        if gap >= .035:
+                        self.assertEqual(result.open_signal, gap >= .04)
+                        if gap >= .04:
                             self.assertEqual(result.command, 'OPEN')
 
     def test_equal_or_higher_inside_is_safe(self):
@@ -71,6 +71,20 @@ class ScaleIntegrationModelTests(unittest.TestCase):
         self.assertAlmostEqual(fast_warning.depth_gap_m, .03)
         self.assertAlmostEqual(fast_warning.actuation_depth_gap_m, .01)
 
+    def test_indicator_hysteresis_prevents_blue_green_chatter(self):
+        stable = StableScaleIntegrationModel(indicator_window_samples=1)
+        self.assertEqual(stable.update(.019, 0).state, 'SAFE')
+        self.assertEqual(stable.update(.021, 0).state, 'WARNING')
+        self.assertEqual(stable.update(.019, 0).state, 'WARNING')
+        self.assertEqual(stable.update(.016, 0).state, 'WARNING')
+        self.assertEqual(stable.update(.014, 0).state, 'SAFE')
+
+    def test_danger_clears_to_warning_below_three_point_five_cm(self):
+        stable = StableScaleIntegrationModel(indicator_window_samples=1)
+        self.assertEqual(stable.update(.04, 0).state, 'DANGER')
+        self.assertEqual(stable.update(.037, 0).state, 'DANGER')
+        self.assertEqual(stable.update(.034, 0).state, 'WARNING')
+
     def test_existing_external_low_close_rule_is_preserved(self):
         self.assertEqual(self.model.evaluate(.02, .0, equalization_active=True).command, 'CLOSE')
 
@@ -90,11 +104,13 @@ class ScaleIntegrationModelTests(unittest.TestCase):
             StableScaleIntegrationModel(indicator_window_samples=2)
         with self.assertRaises(ValueError):
             StableScaleIntegrationModel(window_samples=3, indicator_window_samples=5)
+        with self.assertRaises(ValueError):
+            StableScaleIntegrationModel(indicator_hysteresis_m=.03)
 
-    def test_dry_run_outputs_danger_and_open_at_three_point_five_cm(self):
+    def test_dry_run_outputs_danger_and_open_at_four_cm(self):
         output = StringIO()
         with redirect_stdout(output):
-            code = main(['--dry-run', '--external-depth-cm', '3.5', '--internal-depth-cm', '0'])
+            code = main(['--dry-run', '--external-depth-cm', '4', '--internal-depth-cm', '0'])
         self.assertEqual(code, 0)
         payload = json.loads(output.getvalue())
         self.assertEqual(payload['state'], 'DANGER')
