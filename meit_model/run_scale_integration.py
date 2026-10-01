@@ -39,7 +39,7 @@ def main(argv=None):
     parser.add_argument('--danger-cm', type=float, default=3.0)
     parser.add_argument('--open-cm', type=float, default=3.0)
     parser.add_argument('--warning-gap-cm', type=float, default=2.0)
-    parser.add_argument('--open-gap-cm', type=float, default=4.0)
+    parser.add_argument('--open-gap-cm', type=float, default=3.5)
     parser.add_argument('--internal-warning-cm', type=float, default=2.5)
     parser.add_argument('--internal-limit-cm', type=float, default=3.0)
     parser.add_argument('--indicator-window-samples', type=int, default=3,

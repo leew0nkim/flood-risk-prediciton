@@ -18,14 +18,14 @@ class ScaleIntegrationModelTests(unittest.TestCase):
         for internal in (0.0, .03, .50):
             for active in (False, True):
                 for gap, expected in ((.0199, 'SAFE'), (.02, 'WARNING'), (.03, 'WARNING'),
-                                      (.0399, 'WARNING'), (.04, 'DANGER'), (.05, 'DANGER')):
+                                      (.0349, 'WARNING'), (.035, 'DANGER'), (.04, 'DANGER')):
                     with self.subTest(internal=internal, active=active, gap=gap):
                         result = self.model.evaluate(internal + gap, internal,
                                                      equalization_active=active)
                         self.assertEqual(result.state, expected)
                         self.assertEqual(result.led, {'SAFE': 'BLUE', 'WARNING': 'GREEN', 'DANGER': 'RED'}[expected])
-                        self.assertEqual(result.open_signal, gap >= .04)
-                        if gap >= .04:
+                        self.assertEqual(result.open_signal, gap >= .035)
+                        if gap >= .035:
                             self.assertEqual(result.command, 'OPEN')
 
     def test_equal_or_higher_inside_is_safe(self):
@@ -91,10 +91,10 @@ class ScaleIntegrationModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             StableScaleIntegrationModel(window_samples=3, indicator_window_samples=5)
 
-    def test_dry_run_outputs_danger_and_open_at_four_cm(self):
+    def test_dry_run_outputs_danger_and_open_at_three_point_five_cm(self):
         output = StringIO()
         with redirect_stdout(output):
-            code = main(['--dry-run', '--external-depth-cm', '4', '--internal-depth-cm', '0'])
+            code = main(['--dry-run', '--external-depth-cm', '3.5', '--internal-depth-cm', '0'])
         self.assertEqual(code, 0)
         payload = json.loads(output.getvalue())
         self.assertEqual(payload['state'], 'DANGER')

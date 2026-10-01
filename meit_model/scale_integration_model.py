@@ -67,7 +67,7 @@ class ScaleIntegrationModel:
         internal_warning_depth_m: float = 0.025,
         internal_limit_depth_m: float = 0.03,
         warning_depth_gap_m: float = 0.02,
-        open_depth_gap_m: float = 0.04,
+        open_depth_gap_m: float = 0.035,
     ):
         thresholds = (
             warning_depth_m,
@@ -131,7 +131,7 @@ class ScaleIntegrationModel:
             self.internal_limit_depth_m,
         )
         # Millimetre precision is more than the scale sensor can resolve and
-        # avoids binary-float boundary surprises at exactly 2/4 cm.
+        # avoids binary-float boundary surprises at exactly 2/3.5 cm.
         gap = round(external - internal, 9)
         gap_state = self._state(
             max(0.0, gap),
