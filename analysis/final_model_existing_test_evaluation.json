@@ -1,0 +1,622 @@
+{
+  "schema_version": 1,
+  "status": "FINAL_MODEL_EVALUATED_ON_EXISTING_TESTS_BY_EXPLICIT_USER_OVERRIDE",
+  "evaluation_time_utc": "2026-09-29T00:00:00Z",
+  "checkpoint": "artifacts/final_model/final_model.pt",
+  "checkpoint_sha256": "4d09f89a3138772cadc1150e44dc7195ab84bf93c9a49a45ff050af4dfd9e927",
+  "data_fingerprint": {
+    "train.npz": "4d3f09f275619c04bab9a319ff680d61646e8d41d7ba99790aab153838b9f05c",
+    "validation.npz": "00bce4202ac0fa13febb8dbeb67f46dfc90b4e1ce152183c00e97364a7576d5a",
+    "scaler.json": "87e0a2616f72cf413bb0b17b874b1f58ba1f81893a0fc579784fd9cd091041f8",
+    "minute_bins.csv.gz": "f02ca8b783766431e877237253893ed09bd6efc631425b6cf5e4a1e4501bb232"
+  },
+  "policy": {
+    "schema_version": 2,
+    "status": "LOCKED_FOR_FINAL_TRAINING",
+    "data_fingerprint": {
+      "train.npz": "4d3f09f275619c04bab9a319ff680d61646e8d41d7ba99790aab153838b9f05c",
+      "validation.npz": "00bce4202ac0fa13febb8dbeb67f46dfc90b4e1ce152183c00e97364a7576d5a",
+      "scaler.json": "87e0a2616f72cf413bb0b17b874b1f58ba1f81893a0fc579784fd9cd091041f8",
+      "minute_bins.csv.gz": "f02ca8b783766431e877237253893ed09bd6efc631425b6cf5e4a1e4501bb232"
+    },
+    "forecast_warning_depth_m": 0.3,
+    "external_critical_depth_m": 0.3,
+    "pressure_critical_equivalent_depth_m": 0.3,
+    "threshold_contract": {
+      "external_crossing": {
+        "quantity": "external_depth_m",
+        "critical_threshold_m": 0.3,
+        "use": "LSTM forecast crossing evaluation"
+      },
+      "pressure_critical": {
+        "quantity": "equivalent_depth_m",
+        "critical_threshold_m": 0.3,
+        "direction": "OUTSIDE_HIGHER",
+        "use": "RiskEngine hydrostatic pressure policy"
+      },
+      "same_numeric_value_but_distinct_metrics": true
+    },
+    "external_evaluation_scope": "external_depth_forecast_crossing",
+    "pressure_policy_scope": "outside_higher_equivalent_depth",
+    "required_lead_time_min": 5,
+    "selection_basis": {
+      "primary_metric": "operational_event_recall_at_5_min",
+      "comparison_metrics": [
+        "false_positive_rate",
+        "precision",
+        "alarm_rate"
+      ],
+      "review_note": "All candidates had identical 5-minute operational event recall (17/19); selected 0.300 m for highest precision and lowest FPR/alarm rate without changing the 0.300 m physical crossing criterion.",
+      "selected_event_metrics": {
+        "required_lead_time_min": 5.0,
+        "operational_timely_event_count": 17,
+        "operational_event_recall": 0.8947368421052632,
+        "event_recall": 1.0,
+        "crossing_event_count": 19,
+        "detected_event_count": 19,
+        "missed_event_count": 0,
+        "event_timely_recall": 1.0,
+        "positive_lead_event_count": 19,
+        "zero_lead_event_count": 0,
+        "mean_lead_time_min": 10.210526315789474,
+        "median_lead_time_min": 9.0,
+        "min_lead_time_min": 4.0,
+        "max_lead_time_min": 15.0
+      },
+      "selected_window_metrics": {
+        "eligible_samples": 48795,
+        "actual_crossings": 214,
+        "predicted_alarms": 202,
+        "tp": 150,
+        "fp": 52,
+        "fn": 64,
+        "tn": 48529,
+        "timely_count": 100,
+        "late_or_missed_count": 114,
+        "early_count": 54,
+        "on_time_count": 46,
+        "late_count": 50,
+        "recall": 0.7009345794392523,
+        "precision": 0.7425742574257426,
+        "timely_recall": 0.4672897196261682,
+        "late_or_missed_rate": 0.5327102803738317,
+        "false_positive_rate": 0.0010703773080010704,
+        "alarm_rate": 0.004139768418895379
+      }
+    },
+    "evidence": {
+      "window_calibration": {
+        "path": "artifacts/a_plan_v1/review/window_calibration.json",
+        "sha256": "865563abcda48e355207f73b64f88fb0d332e4b1b261a5d292cc58a89e807a56"
+      },
+      "event_evaluation": {
+        "path": "artifacts/a_plan_v1/review/event_evaluation_5min.json",
+        "sha256": "0dcc0a3bbdfd32f2ba8301bee599a31f21338747bc2381a518fbdfbf59ec4cb9"
+      }
+    },
+    "sealed_test_used": false,
+    "danger_horizon_min": 5
+  },
+  "training_epochs": 14,
+  "seed": 42,
+  "test_selection_used_for_model_or_policy": false,
+  "test_reuse_note": "Existing test splits had previously been inspected; user explicitly requested final metrics despite the fresh-holdout gate.",
+  "splits": {
+    "test_risk": {
+      "samples": 7962,
+      "unique_events": 59,
+      "development_event_overlap": 0,
+      "observed_target_coverage": 0.9668257556727791,
+      "lstm_detailed": {
+        "overall_mae_cm": 0.5687918274883387,
+        "overall_rmse_cm": 1.183975091372266,
+        "horizon_mae_cm": [
+          0.16073850269106038,
+          0.2239641626221439,
+          0.2828863253161238,
+          0.33302957482927564,
+          0.37139183662894804,
+          0.4252292421059578,
+          0.48346445124730447,
+          0.5380282643272356,
+          0.6034692654103239,
+          0.6663660627850849,
+          0.7345636350012283,
+          0.8102826710473123,
+          0.8784930026987818,
+          0.9728743944160375,
+          1.0404863111539673
+        ],
+        "horizon_rmse_cm": [
+          0.28417906799577686,
+          0.4167042374505759,
+          0.5349485694780417,
+          0.6637908765489362,
+          0.751272732778394,
+          0.849483113674904,
+          0.9546082088626087,
+          1.0480382428072523,
+          1.1623420488430254,
+          1.2707707476255614,
+          1.392032081323518,
+          1.5097020849571774,
+          1.6456560429152878,
+          1.784641321193018,
+          1.9090381846707336
+        ],
+        "observed_count": [
+          7696,
+          7694,
+          7698,
+          7691,
+          7685,
+          7678,
+          7668,
+          7675,
+          7683,
+          7688,
+          7713,
+          7726,
+          7728,
+          7725,
+          7720
+        ],
+        "risk": {
+          "critical_depth_m": 0.3,
+          "high_water_points": 19077,
+          "high_water_mae_cm": 0.6994575729171153,
+          "high_water_bias_cm": 0.2557212207129512,
+          "underprediction_count": 7128,
+          "underprediction_rate": 0.3736436546626828,
+          "mean_underprediction_cm": 0.5937961800866389,
+          "point_threshold_tp": 18819,
+          "point_threshold_fp": 635,
+          "point_threshold_fn": 258,
+          "point_threshold_tn": 95756,
+          "point_threshold_precision": 0.9673588979130257,
+          "point_threshold_recall": 0.9864758609844315,
+          "crossing_eligible_samples": 3347,
+          "actual_crossing_samples": 102,
+          "predicted_crossing_samples": 95,
+          "crossing_tp": 83,
+          "crossing_fp": 12,
+          "crossing_fn": 19,
+          "crossing_tn": 3233,
+          "crossing_precision": 0.8736842105263158,
+          "crossing_recall": 0.8137254901960784,
+          "crossing_f1": 0.8426395939086295,
+          "crossing_timing_matches": 83,
+          "crossing_timing_mae_min": 1.5903614457831325,
+          "crossing_timing_bias_min": -0.7228915662650602,
+          "early_crossing_predictions": 49,
+          "on_time_crossing_predictions": 16,
+          "late_crossing_predictions": 18,
+          "late_or_missed_count": 37,
+          "late_or_missed_rate": 0.3627450980392157
+        }
+      },
+      "predictors": {
+        "lstm": {
+          "overall_mae_cm": 0.5687918663024902,
+          "overall_rmse_cm": 1.183975100517273,
+          "event_macro_mae_cm": 0.7664167695378853,
+          "point": {
+            "tp": 18819,
+            "fp": 635,
+            "fn": 258,
+            "tn": 95756,
+            "precision": 0.9673588979130257,
+            "recall": 0.9864758609844315
+          },
+          "window_crossing": {
+            "eligible": 3164,
+            "tp": 80,
+            "fp": 11,
+            "fn": 16,
+            "tn": 3057,
+            "precision": 0.8791208791208791,
+            "recall": 0.8333333333333334
+          },
+          "event_5min": {
+            "required_lead_time_min": 5,
+            "operational_timely_event_count": 9,
+            "operational_event_recall": 1.0,
+            "event_recall": 1.0,
+            "crossing_event_count": 9,
+            "detected_event_count": 9,
+            "missed_event_count": 0,
+            "event_timely_recall": 1.0,
+            "positive_lead_event_count": 9,
+            "zero_lead_event_count": 0,
+            "mean_lead_time_min": 12.555555555555555,
+            "median_lead_time_min": 13.0,
+            "min_lead_time_min": 7.0,
+            "max_lead_time_min": 15.0
+          },
+          "contract_crossing_event_ids": [
+            436,
+            455,
+            1147,
+            1555,
+            1557,
+            2204,
+            2206,
+            2208,
+            2216
+          ]
+        },
+        "persistence": {
+          "overall_mae_cm": 1.0899618864059448,
+          "overall_rmse_cm": 1.8875412940979004,
+          "event_macro_mae_cm": 1.5347051422222187,
+          "point": {
+            "tp": 17859,
+            "fp": 1106,
+            "fn": 1218,
+            "tn": 95285,
+            "precision": 0.9416820458739784,
+            "recall": 0.9361534832520837
+          },
+          "window_crossing": {
+            "eligible": 3164,
+            "tp": 0,
+            "fp": 0,
+            "fn": 96,
+            "tn": 3068,
+            "precision": null,
+            "recall": 0.0
+          },
+          "event_5min": {
+            "required_lead_time_min": 5,
+            "operational_timely_event_count": 0,
+            "operational_event_recall": 0.0,
+            "event_recall": 0.0,
+            "crossing_event_count": 9,
+            "detected_event_count": 0,
+            "missed_event_count": 9,
+            "event_timely_recall": 0.0,
+            "positive_lead_event_count": 0,
+            "zero_lead_event_count": 0,
+            "mean_lead_time_min": null,
+            "median_lead_time_min": null,
+            "min_lead_time_min": null,
+            "max_lead_time_min": null
+          },
+          "contract_crossing_event_ids": [
+            436,
+            455,
+            1147,
+            1555,
+            1557,
+            2204,
+            2206,
+            2208,
+            2216
+          ]
+        },
+        "linear_last_5min": {
+          "overall_mae_cm": 0.7193650007247925,
+          "overall_rmse_cm": 1.6143656969070435,
+          "event_macro_mae_cm": 1.0419364180100166,
+          "point": {
+            "tp": 18774,
+            "fp": 923,
+            "fn": 303,
+            "tn": 95468,
+            "precision": 0.9531400720921968,
+            "recall": 0.9841169995282277
+          },
+          "window_crossing": {
+            "eligible": 3164,
+            "tp": 79,
+            "fp": 27,
+            "fn": 17,
+            "tn": 3041,
+            "precision": 0.7452830188679245,
+            "recall": 0.8229166666666666
+          },
+          "event_5min": {
+            "required_lead_time_min": 5,
+            "operational_timely_event_count": 8,
+            "operational_event_recall": 0.8888888888888888,
+            "event_recall": 1.0,
+            "crossing_event_count": 9,
+            "detected_event_count": 9,
+            "missed_event_count": 0,
+            "event_timely_recall": 1.0,
+            "positive_lead_event_count": 9,
+            "zero_lead_event_count": 0,
+            "mean_lead_time_min": 11.88888888888889,
+            "median_lead_time_min": 13.0,
+            "min_lead_time_min": 4.0,
+            "max_lead_time_min": 15.0
+          },
+          "contract_crossing_event_ids": [
+            436,
+            455,
+            1147,
+            1555,
+            1557,
+            2204,
+            2206,
+            2208,
+            2216
+          ]
+        }
+      },
+      "phase": {
+        "falling": {
+          "samples": 2868,
+          "mean_sample_mae_cm": 0.7640246152877808
+        },
+        "rising": {
+          "samples": 1146,
+          "mean_sample_mae_cm": 1.065446138381958
+        },
+        "stable": {
+          "samples": 3706,
+          "mean_sample_mae_cm": 0.26901233196258545
+        },
+        "unknown": {
+          "samples": 242,
+          "mean_sample_mae_cm": 0.49439674615859985
+        }
+      },
+      "sensor_summary": {
+        "sensor_count": 30,
+        "macro_mae_cm": 0.9051590335865816,
+        "best_mae_cm": 0.12199512869119644,
+        "worst_mae_cm": 3.599783420562744
+      }
+    },
+    "test_temporal": {
+      "samples": 20478,
+      "unique_events": 199,
+      "development_event_overlap": 0,
+      "observed_target_coverage": 0.9845004394960445,
+      "lstm_detailed": {
+        "overall_mae_cm": 0.41481685063429535,
+        "overall_rmse_cm": 0.9374378984696965,
+        "horizon_mae_cm": [
+          0.11787616036892576,
+          0.17031851910058748,
+          0.2143900413004279,
+          0.2562675040002311,
+          0.2917099526934464,
+          0.3324118267840869,
+          0.37400934463530905,
+          0.4095049411655862,
+          0.4463123044735647,
+          0.48537049512797237,
+          0.5294728479322728,
+          0.5763022576157328,
+          0.6231284339740223,
+          0.6716039181117959,
+          0.7241761573539822
+        ],
+        "horizon_rmse_cm": [
+          0.23473637862308186,
+          0.34632742118419624,
+          0.447360644191158,
+          0.5387782258722413,
+          0.6119841959614484,
+          0.6991575550938507,
+          0.7832150441614899,
+          0.8476250247028716,
+          0.925842170068553,
+          1.0066468373658675,
+          1.099294997306805,
+          1.20070508834884,
+          1.284823134736029,
+          1.3962460130220702,
+          1.4840897586772241
+        ],
+        "observed_count": [
+          20159,
+          20167,
+          20171,
+          20171,
+          20175,
+          20160,
+          20155,
+          20153,
+          20147,
+          20146,
+          20170,
+          20173,
+          20179,
+          20151,
+          20132
+        ],
+        "risk": {
+          "critical_depth_m": 0.3,
+          "high_water_points": 3964,
+          "high_water_mae_cm": 1.313626575241416,
+          "high_water_bias_cm": 1.0212864204263832,
+          "underprediction_count": 1021,
+          "underprediction_rate": 0.2575681130171544,
+          "mean_underprediction_cm": 0.5675006230944635,
+          "point_threshold_tp": 3919,
+          "point_threshold_fp": 572,
+          "point_threshold_fn": 45,
+          "point_threshold_tn": 297873,
+          "point_threshold_precision": 0.8726341572032955,
+          "point_threshold_recall": 0.9886478304742684,
+          "crossing_eligible_samples": 15450,
+          "actual_crossing_samples": 32,
+          "predicted_crossing_samples": 51,
+          "crossing_tp": 29,
+          "crossing_fp": 22,
+          "crossing_fn": 3,
+          "crossing_tn": 15396,
+          "crossing_precision": 0.5686274509803921,
+          "crossing_recall": 0.90625,
+          "crossing_f1": 0.6987951807228915,
+          "crossing_timing_matches": 29,
+          "crossing_timing_mae_min": 1.2758620689655173,
+          "crossing_timing_bias_min": -1.0689655172413792,
+          "early_crossing_predictions": 21,
+          "on_time_crossing_predictions": 6,
+          "late_crossing_predictions": 2,
+          "late_or_missed_count": 5,
+          "late_or_missed_rate": 0.15625
+        }
+      },
+      "predictors": {
+        "lstm": {
+          "overall_mae_cm": 0.41481685638427734,
+          "overall_rmse_cm": 0.937437891960144,
+          "event_macro_mae_cm": 0.7494243015371376,
+          "point": {
+            "tp": 3919,
+            "fp": 572,
+            "fn": 45,
+            "tn": 297873,
+            "precision": 0.8726341572032955,
+            "recall": 0.9886478304742684
+          },
+          "window_crossing": {
+            "eligible": 15155,
+            "tp": 28,
+            "fp": 22,
+            "fn": 3,
+            "tn": 15102,
+            "precision": 0.56,
+            "recall": 0.9032258064516129
+          },
+          "event_5min": {
+            "required_lead_time_min": 5,
+            "operational_timely_event_count": 3,
+            "operational_event_recall": 1.0,
+            "event_recall": 1.0,
+            "crossing_event_count": 3,
+            "detected_event_count": 3,
+            "missed_event_count": 0,
+            "event_timely_recall": 1.0,
+            "positive_lead_event_count": 3,
+            "zero_lead_event_count": 0,
+            "mean_lead_time_min": 14.0,
+            "median_lead_time_min": 15.0,
+            "min_lead_time_min": 12.0,
+            "max_lead_time_min": 15.0
+          },
+          "contract_crossing_event_ids": [
+            2950,
+            2951,
+            3014
+          ]
+        },
+        "persistence": {
+          "overall_mae_cm": 0.7578650712966919,
+          "overall_rmse_cm": 1.8992770910263062,
+          "event_macro_mae_cm": 1.5789713733197757,
+          "point": {
+            "tp": 3614,
+            "fp": 1343,
+            "fn": 350,
+            "tn": 297102,
+            "precision": 0.7290700020173492,
+            "recall": 0.9117053481331988
+          },
+          "window_crossing": {
+            "eligible": 15155,
+            "tp": 0,
+            "fp": 0,
+            "fn": 31,
+            "tn": 15124,
+            "precision": null,
+            "recall": 0.0
+          },
+          "event_5min": {
+            "required_lead_time_min": 5,
+            "operational_timely_event_count": 0,
+            "operational_event_recall": 0.0,
+            "event_recall": 0.0,
+            "crossing_event_count": 3,
+            "detected_event_count": 0,
+            "missed_event_count": 3,
+            "event_timely_recall": 0.0,
+            "positive_lead_event_count": 0,
+            "zero_lead_event_count": 0,
+            "mean_lead_time_min": null,
+            "median_lead_time_min": null,
+            "min_lead_time_min": null,
+            "max_lead_time_min": null
+          },
+          "contract_crossing_event_ids": [
+            2950,
+            2951,
+            3014
+          ]
+        },
+        "linear_last_5min": {
+          "overall_mae_cm": 0.5519887804985046,
+          "overall_rmse_cm": 1.2301234006881714,
+          "event_macro_mae_cm": 0.9171386650393731,
+          "point": {
+            "tp": 3889,
+            "fp": 987,
+            "fn": 75,
+            "tn": 297458,
+            "precision": 0.7975799835931091,
+            "recall": 0.981079717457114
+          },
+          "window_crossing": {
+            "eligible": 15155,
+            "tp": 31,
+            "fp": 75,
+            "fn": 0,
+            "tn": 15049,
+            "precision": 0.29245283018867924,
+            "recall": 1.0
+          },
+          "event_5min": {
+            "required_lead_time_min": 5,
+            "operational_timely_event_count": 3,
+            "operational_event_recall": 1.0,
+            "event_recall": 1.0,
+            "crossing_event_count": 3,
+            "detected_event_count": 3,
+            "missed_event_count": 0,
+            "event_timely_recall": 1.0,
+            "positive_lead_event_count": 3,
+            "zero_lead_event_count": 0,
+            "mean_lead_time_min": 15.0,
+            "median_lead_time_min": 15.0,
+            "min_lead_time_min": 15.0,
+            "max_lead_time_min": 15.0
+          },
+          "contract_crossing_event_ids": [
+            2950,
+            2951,
+            3014
+          ]
+        }
+      },
+      "phase": {
+        "falling": {
+          "samples": 5077,
+          "mean_sample_mae_cm": 0.7120938301086426
+        },
+        "rising": {
+          "samples": 1773,
+          "mean_sample_mae_cm": 0.9780229330062866
+        },
+        "stable": {
+          "samples": 13282,
+          "mean_sample_mae_cm": 0.22734224796295166
+        },
+        "unknown": {
+          "samples": 346,
+          "mean_sample_mae_cm": 0.3632107377052307
+        }
+      },
+      "sensor_summary": {
+        "sensor_count": 69,
+        "macro_mae_cm": 1.066010459177736,
+        "best_mae_cm": 0.09861259907484055,
+        "worst_mae_cm": 10.61168098449707
+      }
+    }
+  }
+}

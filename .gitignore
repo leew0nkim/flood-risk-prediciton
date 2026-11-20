@@ -1,7 +1,58 @@
+# Python environments, build outputs and caches
 __pycache__/
 *.py[cod]
 .venv/
+venv/
+env/
 *.egg-info/
-.DS_Store
-data/.preprocess-*/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Local environment variables and credentials
+.env
+.env.*
+!.env.example
+.aws/
+*.pem
+*.key
+
+# Private documents and archive bundles (keep originals locally)
+*.[pP][dD][fF]
+*.[zZ][iI][pP]
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.hwp
+*.hwpx
+
+# Model checkpoints and generated experiment outputs
 artifacts/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+data/.preprocess-*/
+
+# Local archives, editor settings and OS metadata
+.local/
+.idea/
+.vscode/
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini

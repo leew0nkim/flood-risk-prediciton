@@ -1,5 +1,9 @@
 # Risk-aware LSTM selection workflow
 
+The completed canonical run and the final-evaluation gate are documented in
+`docs/a_plan_model_release.md`. The existing test splits are exploratory-only;
+objective final evaluation requires a newly registered untouched holdout.
+
 All selection uses development data only. Do not run or inspect either sealed
 test split until the CV epoch recipe and warning policy are locked. Schema 3
 reports explicitly record `sealed_test_used=false` and distinguish the external

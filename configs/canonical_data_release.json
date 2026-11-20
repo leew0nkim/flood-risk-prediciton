@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "release_id": "floodnet-391a996-canonical-v1",
+  "source_commit": "391a996cdb14284fbbbb9ef26acb7fc1701ee55a",
+  "source_csv": {
+    "path": "export.csv",
+    "sha256": "9fb087622390b21a4aae6506ab08b8c92d6fd2335a4c95a290753800ec064aa1"
+  },
+  "artifact_hashes": {
+    "config.json": {
+      "bytes": 3894,
+      "sha256": "ea4891cc7751c29f26be75cf567f0908527a2e959d25f043c6ee53fe23223844"
+    },
+    "data_manifest.json": {
+      "bytes": 17448,
+      "sha256": "6e8e7e2bce553686527f000e8000298453f2edabd8a963b4ccaaf33a0c86f098"
+    },
+    "event_audit.csv": {
+      "bytes": 790182,
+      "sha256": "de482e6eb1813ea5902d853de5710ae04f24472ac5baf512b8294a67009c052a"
+    },
+    "minute_bins.csv.gz": {
+      "bytes": 4619061,
+      "sha256": "f02ca8b783766431e877237253893ed09bd6efc631425b6cf5e4a1e4501bb232"
+    },
+    "observations.csv.gz": {
+      "bytes": 3509111,
+      "sha256": "6758ae8b8667f8d29faa95152bfa5c756cfbce4485b4a7761c46fa0e758af1e3"
+    },
+    "samples.csv.gz": {
+      "bytes": 1452057,
+      "sha256": "d7d11d7078973fede9aa1bc08d1e6eb6bd9e1aa3be48507da78f9035796cc432"
+    },
+    "scaler.json": {
+      "bytes": 248,
+      "sha256": "87e0a2616f72cf413bb0b17b874b1f58ba1f81893a0fc579784fd9cd091041f8"
+    },
+    "segment_audit.csv": {
+      "bytes": 1937644,
+      "sha256": "32234d55d939c56215caa967abfe9c2a68c08a30a6aac95ff7f28f1b1b90b8c8"
+    },
+    "split_manifest.json": {
+      "bytes": 1310150,
+      "sha256": "11e39b05e65b55d8c70f23e29c970e7c9c6de0f05ff96c5ab21c4064a0fe2866"
+    },
+    "test_risk.npz": {
+      "bytes": 116911,
+      "sha256": "3dfaf069634263be53a7d77999aa09640295e49c20d6a69b18e58b97156df325"
+    },
+    "test_temporal.npz": {
+      "bytes": 239084,
+      "sha256": "04b674b4fe614f83ee784a761fd00a595d637783dfec1bf32b77a0f6d93a347c"
+    },
+    "train.npz": {
+      "bytes": 1333137,
+      "sha256": "4d3f09f275619c04bab9a319ff680d61646e8d41d7ba99790aab153838b9f05c"
+    },
+    "validation.npz": {
+      "bytes": 289176,
+      "sha256": "00bce4202ac0fa13febb8dbeb67f46dfc90b4e1ce152183c00e97364a7576d5a"
+    }
+  },
+  "development_fingerprint": {
+    "train.npz": "4d3f09f275619c04bab9a319ff680d61646e8d41d7ba99790aab153838b9f05c",
+    "validation.npz": "00bce4202ac0fa13febb8dbeb67f46dfc90b4e1ce152183c00e97364a7576d5a",
+    "scaler.json": "87e0a2616f72cf413bb0b17b874b1f58ba1f81893a0fc579784fd9cd091041f8",
+    "minute_bins.csv.gz": "f02ca8b783766431e877237253893ed09bd6efc631425b6cf5e4a1e4501bb232"
+  },
+  "split_usage": {
+    "train": {
+      "role": "development_training",
+      "opened_for_model_selection": true
+    },
+    "validation": {
+      "role": "development_cv_validation",
+      "opened_for_model_selection": true
+    },
+    "test_risk": {
+      "role": "exploratory_only",
+      "opened_at_utc": "2026-09-29T00:00:00Z",
+      "eligible_for_final_claim": false
+    },
+    "test_temporal": {
+      "role": "exploratory_only",
+      "opened_at_utc": "2026-09-29T00:00:00Z",
+      "eligible_for_final_claim": false
+    }
+  },
+  "final_holdout": {
+    "status": "REQUIRED_NEW_UNOPENED_DATA",
+    "registered_path": null,
+    "sha256": null,
+    "requirements": [
+      "Must contain events not used by train, validation, test_risk or test_temporal.",
+      "Selection rule and hashes must be recorded before the final checkpoint is evaluated.",
+      "Model, epoch and warning policy must remain frozen after registration.",
+      "Report independent event and UTC-date counts with every metric."
+    ]
+  },
+  "storm_grouping": {
+    "status": "UNAVAILABLE_NO_STORM_IDS",
+    "required_fields": [
+      "storm_id"
+    ],
+    "rule_when_available": "All sensors and events from one storm must remain in one split.",
+    "claim_restriction": "Do not claim storm-level independence until storm IDs are supplied and verified."
+  }
+}

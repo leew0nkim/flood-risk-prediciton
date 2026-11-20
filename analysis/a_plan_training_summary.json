@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "status": "FINAL_MODEL_TRAINED_FINAL_OBJECTIVE_EVALUATION_BLOCKED_PENDING_FRESH_HOLDOUT",
+  "data_release_id": "floodnet-391a996-canonical-v1",
+  "development_fingerprint": {
+    "train.npz": "4d3f09f275619c04bab9a319ff680d61646e8d41d7ba99790aab153838b9f05c",
+    "validation.npz": "00bce4202ac0fa13febb8dbeb67f46dfc90b4e1ce152183c00e97364a7576d5a",
+    "scaler.json": "87e0a2616f72cf413bb0b17b874b1f58ba1f81893a0fc579784fd9cd091041f8",
+    "minute_bins.csv.gz": "f02ca8b783766431e877237253893ed09bd6efc631425b6cf5e4a1e4501bb232"
+  },
+  "sealed_test_used_for_cv_policy_or_final_training": false,
+  "existing_test_results_role": "exploratory_only",
+  "cv": {
+    "fold_definition_path": "artifacts/a_plan_v1/cv/cv_summary.json",
+    "fold_definition_sha256": "52605d049c8dc909c56ad2d0cc982b234a50f435eebfc1c50a7efe3c851c591a",
+    "seeds": {
+      "42": {
+        "summary_path": "artifacts/a_plan_v1/risk_cv_seed42/training_summary.json",
+        "summary_sha256": "665531224dd3ae12acfc1976b5fb6f60eaafc0f621c903f0488f44bb1f8effa3",
+        "folds": [
+          {
+            "fold": 1,
+            "best_epoch": 9,
+            "best_val_mae_cm": 0.6073024881733832
+          },
+          {
+            "fold": 2,
+            "best_epoch": 11,
+            "best_val_mae_cm": 0.6980470108318692
+          },
+          {
+            "fold": 3,
+            "best_epoch": 24,
+            "best_val_mae_cm": 0.47048127950157825
+          },
+          {
+            "fold": 4,
+            "best_epoch": 9,
+            "best_val_mae_cm": 0.4922586730502422
+          }
+        ]
+      },
+      "43": {
+        "summary_path": "artifacts/a_plan_v1/risk_cv_seed43/training_summary.json",
+        "summary_sha256": "0390a7257c415a53bec979cf14db26b2e5c8bdd152449c2c25cef2b266fc53cc",
+        "folds": [
+          {
+            "fold": 1,
+            "best_epoch": 37,
+            "best_val_mae_cm": 0.5856791567871658
+          },
+          {
+            "fold": 2,
+            "best_epoch": 6,
+            "best_val_mae_cm": 0.7066226311398314
+          },
+          {
+            "fold": 3,
+            "best_epoch": 22,
+            "best_val_mae_cm": 0.46736115235509973
+          },
+          {
+            "fold": 4,
+            "best_epoch": 18,
+            "best_val_mae_cm": 0.4817450402579657
+          }
+        ]
+      },
+      "44": {
+        "summary_path": "artifacts/a_plan_v1/risk_cv_seed44/training_summary.json",
+        "summary_sha256": "95a2079743f2cfa6fb4315a480dd87f77648ec5719d080f9045a516dfbbfb070",
+        "folds": [
+          {
+            "fold": 1,
+            "best_epoch": 44,
+            "best_val_mae_cm": 0.5807626415855156
+          },
+          {
+            "fold": 2,
+            "best_epoch": 15,
+            "best_val_mae_cm": 0.7020271189258751
+          },
+          {
+            "fold": 3,
+            "best_epoch": 10,
+            "best_val_mae_cm": 0.48955871250362426
+          },
+          {
+            "fold": 4,
+            "best_epoch": 13,
+            "best_val_mae_cm": 0.48678626574372214
+          }
+        ]
+      }
+    }
+  },
+  "policy": {
+    "actual_external_crossing_m": 0.3,
+    "forecast_warning_threshold_m": 0.3,
+    "required_lead_time_min": 5,
+    "development_operational_event_recall": "17/19",
+    "window_precision": 0.7425742574257426,
+    "window_fpr": 0.0010703773080010704,
+    "selection_reason": "All candidates had 17/19 timely events; 0.300 m had the highest precision and lowest FPR/alarm rate.",
+    "window_report": "artifacts/a_plan_v1/review/window_calibration.json",
+    "window_report_sha256": "865563abcda48e355207f73b64f88fb0d332e4b1b261a5d292cc58a89e807a56",
+    "event_report": "artifacts/a_plan_v1/review/event_evaluation_5min.json",
+    "event_report_sha256": "0dcc0a3bbdfd32f2ba8301bee599a31f21338747bc2381a518fbdfbf59ec4cb9",
+    "locked_policy": "artifacts/a_plan_v1/review/locked_policy.json",
+    "locked_policy_sha256": "885b42cecb2ef16e4c12f551aceec4992a689b8f1cc633ec3321abc8021d58d2"
+  },
+  "final_model": {
+    "path": "artifacts/a_plan_v1/final_model/final_model.pt",
+    "sha256": "4d09f89a3138772cadc1150e44dc7195ab84bf93c9a49a45ff050af4dfd9e927",
+    "training_summary": "artifacts/a_plan_v1/final_model/training_summary.json",
+    "training_summary_sha256": "f13ab810b475eb70a98e3e58b3dbbe77ee7cb7c7ce3b2d23d6e6a05bf72b020b",
+    "epochs": 14,
+    "seed": 42,
+    "development_windows": 121913,
+    "predictor_smoke_status": "READY"
+  },
+  "final_holdout": {
+    "status": "REQUIRED_NEW_UNOPENED_DATA",
+    "registered_path": null,
+    "sha256": null,
+    "requirements": [
+      "Must contain events not used by train, validation, test_risk or test_temporal.",
+      "Selection rule and hashes must be recorded before the final checkpoint is evaluated.",
+      "Model, epoch and warning policy must remain frozen after registration.",
+      "Report independent event and UTC-date counts with every metric."
+    ]
+  },
+  "storm_grouping": {
+    "status": "UNAVAILABLE_NO_STORM_IDS",
+    "required_fields": [
+      "storm_id"
+    ],
+    "rule_when_available": "All sensors and events from one storm must remain in one split.",
+    "claim_restriction": "Do not claim storm-level independence until storm IDs are supplied and verified."
+  }
+}
